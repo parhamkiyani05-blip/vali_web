@@ -57,7 +57,7 @@ export default function App() {
         <Route
           path="/drivers"
           element={
-            <Guard roles={['manager', 'office']}>
+            <Guard roles={['manager', 'office', 'employee']}>
               <Drivers />
             </Guard>
           }
