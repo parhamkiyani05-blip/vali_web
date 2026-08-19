@@ -63,16 +63,14 @@ export default function Dashboard() {
   }
 
   // ==========================
-  // داشبورد کاربر عادی
+  // کاربر عادی
   // ==========================
   if (role === 'employee') {
     return (
       <section>
 
         <div className="hero">
-
           <div>
-
             <span className="eyebrow">
               پنل کاربری
             </span>
@@ -82,51 +80,32 @@ export default function Dashboard() {
             </h2>
 
             <p>
-              از این پنل می‌توانی پلاک جدید و هزینه‌های روزانه را ثبت کنی.
+              ثبت راننده، پلاک و هزینه‌های روزانه
             </p>
-
           </div>
 
           <div className="hero-truck">
             🚛
             <b>VALI</b>
           </div>
-
         </div>
 
 
         <div className="cards">
 
           <div className="stat">
-            <span>
-              دسترسی فعلی
-            </span>
-
-            <b>
-              ثبت پلاک و هزینه
-            </b>
+            <span>دسترسی</span>
+            <b>ثبت پلاک و هزینه</b>
           </div>
 
-
           <div className="stat">
-            <span>
-              ارزهای سیستم
-            </span>
-
-            <b>
-              دلار + تومان
-            </b>
+            <span>واحدهای مالی</span>
+            <b>دلار + تومان</b>
           </div>
 
-
           <div className="stat">
-            <span>
-              وضعیت
-            </span>
-
-            <b>
-              آنلاین
-            </b>
+            <span>آخرین ثبت‌ها</span>
+            <b>{data.recent?.length || 0}</b>
           </div>
 
         </div>
@@ -135,24 +114,14 @@ export default function Dashboard() {
         <div className="panel">
 
           <div className="section-head">
-
             <div>
-              <h3>
-                آخرین هزینه‌های ثبت‌شده توسط شما
-              </h3>
-
-              <p>
-                آخرین عملیات ثبت شده در حساب شما
-              </p>
+              <h3>آخرین هزینه‌های شما</h3>
+              <p>آخرین هزینه‌هایی که با حساب شما ثبت شده‌اند</p>
             </div>
-
           </div>
 
-
           <table>
-
             <thead>
-
               <tr>
                 <th>راننده</th>
                 <th>پلاک</th>
@@ -160,32 +129,16 @@ export default function Dashboard() {
                 <th>مبلغ</th>
                 <th>وضعیت</th>
               </tr>
-
             </thead>
-
 
             <tbody>
 
               {(data.recent || []).map(item => (
-
-                <tr key={`employee-${item.id}`}>
-
-                  <td>
-                    {item.driver_name || '—'}
-                  </td>
-
-                  <td>
-                    {item.plate || '—'}
-                  </td>
-
-                  <td>
-                    {item.description || '—'}
-                  </td>
-
-                  <td>
-                    {money(item.amount, item.currency)}
-                  </td>
-
+                <tr key={`expense-${item.id}`}>
+                  <td>{item.driver_name || '—'}</td>
+                  <td>{item.plate || '—'}</td>
+                  <td>{item.description || '—'}</td>
+                  <td>{money(item.amount, item.currency)}</td>
                   <td>
                     {item.status === 'approved'
                       ? 'تأیید'
@@ -193,24 +146,18 @@ export default function Dashboard() {
                         ? 'رد'
                         : 'منتظر'}
                   </td>
-
                 </tr>
-
               ))}
 
-
               {!data.recent?.length && (
-
                 <tr>
                   <td colSpan="5">
                     هنوز هزینه‌ای ثبت نکرده‌اید.
                   </td>
                 </tr>
-
               )}
 
             </tbody>
-
           </table>
 
         </div>
@@ -220,11 +167,12 @@ export default function Dashboard() {
   }
 
 
-  // ==========================
-  // مدیر / دفتردار
-  // ==========================
-  const usd = data.today?.USD || {};
-  const toman = data.today?.TOMAN || {};
+  const driverUSD = data.driverToday?.USD || {};
+  const driverToman = data.driverToday?.TOMAN || {};
+
+  const companyUSD = data.companyToday?.USD || {};
+  const companyToman = data.companyToday?.TOMAN || {};
+
 
   return (
     <section>
@@ -232,7 +180,6 @@ export default function Dashboard() {
       <div className="hero">
 
         <div>
-
           <span className="eyebrow">
             پنل مدیریت
           </span>
@@ -242,9 +189,8 @@ export default function Dashboard() {
           </h2>
 
           <p>
-            خلاصه حساب‌های امروز، آخرین عملیات و وضعیت راننده‌ها
+            وضعیت مالی امروز راننده‌ها و شرکت‌ها، آخرین عملیات و حساب‌ها
           </p>
-
         </div>
 
         <div className="hero-truck">
@@ -258,122 +204,108 @@ export default function Dashboard() {
       <div className="cards">
 
         <div className="stat">
-
-          <span>
-            دسترسی فعلی
-          </span>
-
-          <b>
-            {roleLabel()}
-          </b>
-
+          <span>دسترسی فعلی</span>
+          <b>{roleLabel()}</b>
         </div>
 
-
         <div className="stat">
-
-          <span>
-            ارزهای سیستم
-          </span>
-
-          <b>
-            USD / TOMAN
-          </b>
-
+          <span>واحدهای مالی</span>
+          <b>USD / TOMAN</b>
         </div>
 
-
         <div className="stat">
-
-          <span>
-            تعداد آخرین عملیات
-          </span>
-
-          <b>
-            {data.recent?.length || 0}
-          </b>
-
+          <span>آخرین عملیات</span>
+          <b>{data.recent?.length || 0}</b>
         </div>
 
-
         <div className="stat">
-
-          <span>
-            راننده‌های نمایش داده شده
-          </span>
-
-          <b>
-            {data.drivers?.length || 0}
-          </b>
-
+          <span>راننده‌های اخیر</span>
+          <b>{data.drivers?.length || 0}</b>
         </div>
 
       </div>
 
 
-      {/* ==========================
-          حساب دلار امروز
-      ========================== */}
+      {/* ==================================
+          حساب راننده‌ها
+      ================================== */}
 
       <div className="panel">
 
         <div className="section-head">
+          <div>
+            <h3>🚛 حساب راننده‌ها — امروز</h3>
+            <p>
+              دریافت، پرداخت، هزینه و مانده حساب راننده‌ها
+            </p>
+          </div>
+        </div>
+
+
+        <h4>دلار</h4>
+
+        <div className="dashboard-grid">
 
           <div>
-            <h3>
-              خلاصه مالی امروز - دلار
-            </h3>
+            <small>دریافت</small>
+            <strong>
+              {money(driverUSD.receipt, 'USD')}
+            </strong>
+          </div>
 
-            <p>
-              دریافت، پرداخت، هزینه و مانده امروز
-            </p>
+          <div>
+            <small>پرداخت</small>
+            <strong>
+              {money(driverUSD.payment, 'USD')}
+            </strong>
+          </div>
+
+          <div>
+            <small>هزینه</small>
+            <strong>
+              {money(driverUSD.expense, 'USD')}
+            </strong>
+          </div>
+
+          <div>
+            <small>مانده</small>
+            <strong>
+              {money(driverUSD.balance, 'USD')}
+            </strong>
           </div>
 
         </div>
 
 
+        <h4>تومان</h4>
+
         <div className="dashboard-grid">
 
           <div>
-            <small>
-              دریافت
-            </small>
-
+            <small>دریافت</small>
             <strong>
-              {money(usd.receipt, 'USD')}
+              {money(driverToman.receipt, 'TOMAN')}
             </strong>
           </div>
 
-
           <div>
-            <small>
-              پرداخت
-            </small>
-
+            <small>پرداخت</small>
             <strong>
-              {money(usd.payment, 'USD')}
+              {money(driverToman.payment, 'TOMAN')}
             </strong>
           </div>
 
-
           <div>
-            <small>
-              هزینه
-            </small>
-
+            <small>هزینه</small>
             <strong>
-              {money(usd.expense, 'USD')}
+              {money(driverToman.expense, 'TOMAN')}
             </strong>
           </div>
 
-
           <div>
-            <small>
-              مانده امروز
-            </small>
-
+            <small>مانده</small>
             <strong>
-              {money(usd.balance, 'USD')}
+              {money(driverToman.balance, 'TOMAN')}
             </strong>
           </div>
 
@@ -382,138 +314,128 @@ export default function Dashboard() {
       </div>
 
 
-      {/* ==========================
-          حساب تومان امروز
-      ========================== */}
+      {/* ==================================
+          حساب شرکت‌ها فقط مدیر
+      ================================== */}
 
-      <div className="panel">
+      {role === 'manager' && data.companyToday && (
 
-        <div className="section-head">
+        <div className="panel">
 
-          <div>
-            <h3>
-              خلاصه مالی امروز - تومان
-            </h3>
+          <div className="section-head">
+            <div>
+              <h3>🏢 حساب شرکت‌ها — امروز</h3>
+              <p>
+                دریافت، پرداخت، بدهی و مانده حساب شرکت‌ها
+              </p>
+            </div>
+          </div>
 
-            <p>
-              دریافت، پرداخت، هزینه و مانده امروز
-            </p>
+
+          <h4>دلار</h4>
+
+          <div className="dashboard-grid">
+
+            <div>
+              <small>دریافت</small>
+              <strong>
+                {money(companyUSD.receipt, 'USD')}
+              </strong>
+            </div>
+
+            <div>
+              <small>پرداخت</small>
+              <strong>
+                {money(companyUSD.payment, 'USD')}
+              </strong>
+            </div>
+
+            <div>
+              <small>بدهی</small>
+              <strong>
+                {money(companyUSD.debt, 'USD')}
+              </strong>
+            </div>
+
+            <div>
+              <small>مانده</small>
+              <strong>
+                {money(companyUSD.balance, 'USD')}
+              </strong>
+            </div>
+
+          </div>
+
+
+          <h4>تومان</h4>
+
+          <div className="dashboard-grid">
+
+            <div>
+              <small>دریافت</small>
+              <strong>
+                {money(companyToman.receipt, 'TOMAN')}
+              </strong>
+            </div>
+
+            <div>
+              <small>پرداخت</small>
+              <strong>
+                {money(companyToman.payment, 'TOMAN')}
+              </strong>
+            </div>
+
+            <div>
+              <small>بدهی</small>
+              <strong>
+                {money(companyToman.debt, 'TOMAN')}
+              </strong>
+            </div>
+
+            <div>
+              <small>مانده</small>
+              <strong>
+                {money(companyToman.balance, 'TOMAN')}
+              </strong>
+            </div>
+
           </div>
 
         </div>
 
-
-        <div className="dashboard-grid">
-
-          <div>
-            <small>
-              دریافت
-            </small>
-
-            <strong>
-              {money(toman.receipt, 'TOMAN')}
-            </strong>
-          </div>
+      )}
 
 
-          <div>
-            <small>
-              پرداخت
-            </small>
-
-            <strong>
-              {money(toman.payment, 'TOMAN')}
-            </strong>
-          </div>
-
-
-          <div>
-            <small>
-              هزینه
-            </small>
-
-            <strong>
-              {money(toman.expense, 'TOMAN')}
-            </strong>
-          </div>
-
-
-          <div>
-            <small>
-              مانده امروز
-            </small>
-
-            <strong>
-              {money(toman.balance, 'TOMAN')}
-            </strong>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* ==========================
+      {/* ==================================
           آخرین عملیات
-      ========================== */}
+      ================================== */}
 
       <div className="panel">
 
         <div className="section-head">
-
           <div>
-
-            <h3>
-              آخرین عملیات مالی
-            </h3>
-
+            <h3>آخرین عملیات مالی</h3>
             <p>
-              آخرین دریافت‌ها، پرداخت‌ها و هزینه‌های ثبت شده
+              آخرین دریافت‌ها، پرداخت‌ها و هزینه‌های ثبت‌شده
             </p>
-
           </div>
-
         </div>
 
 
         <table>
 
           <thead>
-
             <tr>
-
-              <th>
-                تاریخ
-              </th>
-
-              <th>
-                طرف حساب
-              </th>
-
-              <th>
-                پلاک
-              </th>
-
-              <th>
-                نوع
-              </th>
-
-              <th>
-                شرح
-              </th>
-
-              <th>
-                مبلغ
-              </th>
-
-              <th>
-                ثبت‌کننده
-              </th>
-
+              <th>تاریخ</th>
+              <th>نوع حساب</th>
+              <th>طرف حساب</th>
+              <th>پلاک</th>
+              <th>نوع</th>
+              <th>شرح</th>
+              <th>مبلغ</th>
+              <th>ثبت‌کننده</th>
             </tr>
-
           </thead>
-
 
           <tbody>
 
@@ -528,31 +450,31 @@ export default function Dashboard() {
                     : '—'}
                 </td>
 
+                <td>
+                  {item.entity_type === 'company'
+                    ? 'شرکت'
+                    : 'راننده'}
+                </td>
 
                 <td>
                   {item.entity_name || '—'}
                 </td>
 
-
                 <td>
                   {item.plate || '—'}
                 </td>
-
 
                 <td>
                   {typeLabel(item.type)}
                 </td>
 
-
                 <td>
                   {item.description || '—'}
                 </td>
 
-
                 <td>
                   {money(item.amount, item.currency)}
                 </td>
-
 
                 <td>
                   {item.created_by_name || '—'}
@@ -566,11 +488,9 @@ export default function Dashboard() {
             {!data.recent?.length && (
 
               <tr>
-
-                <td colSpan="7">
+                <td colSpan="8">
                   هنوز عملیات مالی ثبت نشده است.
                 </td>
-
               </tr>
 
             )}
@@ -582,63 +502,34 @@ export default function Dashboard() {
       </div>
 
 
-      {/* ==========================
+      {/* ==================================
           وضعیت راننده‌ها
-      ========================== */}
+      ================================== */}
 
       <div className="panel">
 
         <div className="section-head">
-
           <div>
-
-            <h3>
-              وضعیت حساب راننده‌ها
-            </h3>
-
+            <h3>وضعیت حساب راننده‌ها</h3>
             <p>
-              خلاصه پرداخت و دریافت راننده‌ها
+              خلاصه پرداخت و دریافت راننده‌های اخیر
             </p>
-
           </div>
-
         </div>
 
 
         <table>
 
           <thead>
-
             <tr>
-
-              <th>
-                راننده
-              </th>
-
-              <th>
-                پلاک
-              </th>
-
-              <th>
-                پرداخت دلار
-              </th>
-
-              <th>
-                دریافت دلار
-              </th>
-
-              <th>
-                پرداخت تومان
-              </th>
-
-              <th>
-                دریافت تومان
-              </th>
-
+              <th>راننده</th>
+              <th>پلاک</th>
+              <th>پرداخت دلار</th>
+              <th>دریافت دلار</th>
+              <th>پرداخت تومان</th>
+              <th>دریافت تومان</th>
             </tr>
-
           </thead>
-
 
           <tbody>
 
@@ -646,30 +537,21 @@ export default function Dashboard() {
 
               <tr key={driver.id}>
 
-                <td>
-                  {driver.name}
-                </td>
+                <td>{driver.name}</td>
 
-
-                <td>
-                  {driver.truck_number}
-                </td>
-
+                <td>{driver.truck_number}</td>
 
                 <td>
                   {money(driver.payment_usd, 'USD')}
                 </td>
 
-
                 <td>
                   {money(driver.receipt_usd, 'USD')}
                 </td>
 
-
                 <td>
                   {money(driver.payment_toman, 'TOMAN')}
                 </td>
-
 
                 <td>
                   {money(driver.receipt_toman, 'TOMAN')}
@@ -683,11 +565,9 @@ export default function Dashboard() {
             {!data.drivers?.length && (
 
               <tr>
-
                 <td colSpan="6">
                   هنوز راننده‌ای ثبت نشده است.
                 </td>
-
               </tr>
 
             )}
