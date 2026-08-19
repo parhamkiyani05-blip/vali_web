@@ -16,7 +16,7 @@ export default function Invoice() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  const t = labels[lang];
+  const t = labels[lang] || {};
   const rtl = lang === 'fa';
 
   const isCompany = location.pathname.includes('/invoice/company/');
@@ -57,10 +57,19 @@ export default function Invoice() {
           return;
         }
 
-        setError('فاکتور باید از حساب یک راننده یا شرکت باز شود.');
+        setError(
+          lang === 'tr'
+            ? 'Fatura bir sürücü veya firma hesabından açılmalıdır.'
+            : 'فاکتور باید از حساب یک راننده یا شرکت باز شود.'
+        );
 
       } catch (err) {
-        setError(err.message || 'خطا در دریافت اطلاعات فاکتور');
+        setError(
+          err.message ||
+          (lang === 'tr'
+            ? 'Fatura bilgileri alınamadı.'
+            : 'خطا در دریافت اطلاعات فاکتور')
+        );
       }
     }
 
@@ -216,7 +225,11 @@ export default function Invoice() {
 
   function money(value, currency) {
     return `${Number(value || 0).toLocaleString()} ${
-      currency === 'USD' ? '$' : 'تومان'
+      currency === 'USD'
+        ? '$'
+        : lang === 'tr'
+          ? 'Toman'
+          : 'تومان'
     }`;
   }
 
@@ -286,13 +299,15 @@ export default function Invoice() {
     return (
       <section>
         <div className="panel">
+
           <div className="error">
             {error}
           </div>
 
           <button onClick={() => navigate(-1)}>
-            بازگشت
+            {lang === 'tr' ? 'Geri' : 'بازگشت'}
           </button>
+
         </div>
       </section>
     );
@@ -302,7 +317,9 @@ export default function Invoice() {
     return (
       <section>
         <div className="panel">
-          در حال آماده‌سازی فاکتور...
+          {lang === 'tr'
+            ? 'Fatura hazırlanıyor...'
+            : 'در حال آماده‌سازی فاکتور...'}
         </div>
       </section>
     );
@@ -319,11 +336,19 @@ export default function Invoice() {
       <div className="section-head no-print">
 
         <div>
-          <h2>فاکتور حساب</h2>
+
+          <h2>
+            {lang === 'tr'
+              ? 'Hesap Faturası'
+              : 'فاکتور حساب'}
+          </h2>
 
           <p>
-            بازه زمانی، ریز تراکنش‌ها و جمع مستقل دلار و تومان
+            {lang === 'tr'
+              ? 'Tarih aralığı, işlem detayları ve ayrı USD / Toman toplamları'
+              : 'بازه زمانی، ریز تراکنش‌ها و جمع مستقل دلار و تومان'}
           </p>
+
         </div>
 
 
@@ -333,6 +358,7 @@ export default function Invoice() {
             value={lang}
             onChange={e => setLang(e.target.value)}
           >
+
             <option value="fa">
               فارسی
             </option>
@@ -340,6 +366,7 @@ export default function Invoice() {
             <option value="tr">
               Türkçe
             </option>
+
           </select>
 
 
@@ -347,14 +374,16 @@ export default function Invoice() {
             className="ghost"
             onClick={() => navigate(-1)}
           >
-            بازگشت
+            {lang === 'tr' ? 'Geri' : 'بازگشت'}
           </button>
 
 
           <button
             onClick={() => window.print()}
           >
-            چاپ / PDF
+            {lang === 'tr'
+              ? 'Yazdır / PDF'
+              : 'چاپ / PDF'}
           </button>
 
         </div>
@@ -367,48 +396,71 @@ export default function Invoice() {
         <div className="grid-form">
 
           <label>
-            بازه فاکتور
+
+            {lang === 'tr'
+              ? 'Fatura dönemi'
+              : 'بازه فاکتور'}
 
             <select
               value={rangeMode}
               onChange={e => setRangeMode(e.target.value)}
             >
+
               <option value="all">
-                همه تراکنش‌ها
+                {lang === 'tr'
+                  ? 'Tüm işlemler'
+                  : 'همه تراکنش‌ها'}
               </option>
 
               <option value="month">
-                این ماه
+                {lang === 'tr'
+                  ? 'Bu ay'
+                  : 'این ماه'}
               </option>
 
               <option value="custom">
-                بازه دلخواه
+                {lang === 'tr'
+                  ? 'Özel tarih aralığı'
+                  : 'بازه دلخواه'}
               </option>
+
             </select>
+
           </label>
 
 
           {rangeMode === 'custom' && (
             <>
+
               <label>
-                از تاریخ
+
+                {lang === 'tr'
+                  ? 'Başlangıç tarihi'
+                  : 'از تاریخ'}
 
                 <input
                   type="date"
                   value={fromDate}
                   onChange={e => setFromDate(e.target.value)}
                 />
+
               </label>
 
+
               <label>
-                تا تاریخ
+
+                {lang === 'tr'
+                  ? 'Bitiş tarihi'
+                  : 'تا تاریخ'}
 
                 <input
                   type="date"
                   value={toDate}
                   onChange={e => setToDate(e.target.value)}
                 />
+
               </label>
+
             </>
           )}
 
@@ -425,16 +477,23 @@ export default function Invoice() {
         <div className="invoice-top">
 
           <div>
-            <h1>VALI TRANSPORT</h1>
+
+            <h1>
+              VALI TRANSPORT
+            </h1>
 
             <p>
-              {t.invoice || 'Invoice'} #{invoiceNumber}
+              {t.invoice || (lang === 'tr' ? 'Fatura' : 'فاکتور')}
+              {' '}
+              #{invoiceNumber}
             </p>
 
             <small>
               {rangeLabel()}
             </small>
+
           </div>
+
 
           <div className="invoice-badge">
             A5
@@ -447,39 +506,71 @@ export default function Invoice() {
 
           {data.entityType === 'driver' ? (
             <>
+
               <span>
-                <b>{t.driver || 'راننده'}:</b>{' '}
+                <b>
+                  {lang === 'tr'
+                    ? 'Sürücü'
+                    : (t.driver || 'راننده')}:
+                </b>{' '}
                 {entity.name}
               </span>
 
+
               <span>
-                <b>{t.truck || 'پلاک'}:</b>{' '}
+                <b>
+                  {lang === 'tr'
+                    ? 'Plaka'
+                    : (t.truck || 'پلاک')}:
+                </b>{' '}
                 {entity.truck_number}
               </span>
 
+
               <span>
-                <b>{t.phone || 'تماس'}:</b>{' '}
+                <b>
+                  {lang === 'tr'
+                    ? 'Telefon'
+                    : (t.phone || 'تماس')}:
+                </b>{' '}
                 {entity.phone || '—'}
               </span>
+
             </>
           ) : (
             <>
+
               <span>
-                <b>{lang === 'tr' ? 'Firma' : 'شرکت'}:</b>{' '}
+                <b>
+                  {lang === 'tr' ? 'Firma' : 'شرکت'}:
+                </b>{' '}
                 {entity.name}
               </span>
 
+
               <span>
-                <b>{t.phone || 'تماس'}:</b>{' '}
+                <b>
+                  {lang === 'tr'
+                    ? 'Telefon'
+                    : (t.phone || 'تماس')}:
+                </b>{' '}
                 {entity.phone || '—'}
               </span>
 
+
               {entity.note && (
+
                 <span>
-                  <b>{lang === 'tr' ? 'Not' : 'یادداشت'}:</b>{' '}
+                  <b>
+                    {lang === 'tr'
+                      ? 'Not'
+                      : 'یادداشت'}:
+                  </b>{' '}
                   {entity.note}
                 </span>
+
               )}
+
             </>
           )}
 
@@ -491,10 +582,31 @@ export default function Invoice() {
           <thead>
 
             <tr>
-              <th>{t.date || 'تاریخ'}</th>
-              <th>{t.description || 'شرح'}</th>
-              <th>{lang === 'tr' ? 'Tür' : 'نوع'}</th>
-              <th>{lang === 'tr' ? 'Tutar' : 'مبلغ'}</th>
+
+              <th>
+                {lang === 'tr'
+                  ? 'Tarih'
+                  : (t.date || 'تاریخ')}
+              </th>
+
+              <th>
+                {lang === 'tr'
+                  ? 'Açıklama'
+                  : (t.description || 'شرح')}
+              </th>
+
+              <th>
+                {lang === 'tr'
+                  ? 'Tür'
+                  : 'نوع'}
+              </th>
+
+              <th>
+                {lang === 'tr'
+                  ? 'Tutar'
+                  : 'مبلغ'}
+              </th>
+
             </tr>
 
           </thead>
@@ -530,12 +642,13 @@ export default function Invoice() {
             {!filteredRows.length && (
 
               <tr>
+
                 <td colSpan="4">
                   {lang === 'tr'
                     ? 'Bu tarih aralığında işlem bulunmuyor.'
-                    : 'در این بازه زمانی تراکنشی ثبت نشده است.'
-                  }
+                    : 'در این بازه زمانی تراکنشی ثبت نشده است.'}
                 </td>
+
               </tr>
 
             )}
@@ -548,47 +661,118 @@ export default function Invoice() {
         <div className="invoice-totals">
 
           <div>
-            <span>دریافت دلار</span>
-            <b>{money(totals.USD.receipt, 'USD')}</b>
+            <span>
+              {lang === 'tr'
+                ? 'USD Tahsilat'
+                : 'دریافت دلار'}
+            </span>
+
+            <b>
+              {money(totals.USD.receipt, 'USD')}
+            </b>
           </div>
 
+
           <div>
-            <span>پرداخت دلار</span>
-            <b>{money(totals.USD.payment, 'USD')}</b>
+            <span>
+              {lang === 'tr'
+                ? 'USD Ödeme'
+                : 'پرداخت دلار'}
+            </span>
+
+            <b>
+              {money(totals.USD.payment, 'USD')}
+            </b>
           </div>
+
 
           {data.entityType === 'driver' && (
+
             <div>
-              <span>هزینه دلار</span>
-              <b>{money(totals.USD.expense, 'USD')}</b>
+
+              <span>
+                {lang === 'tr'
+                  ? 'USD Masraf'
+                  : 'هزینه دلار'}
+              </span>
+
+              <b>
+                {money(totals.USD.expense, 'USD')}
+              </b>
+
             </div>
+
           )}
 
-          <div>
-            <span>مانده دلار</span>
-            <b>{money(totals.USD.balance, 'USD')}</b>
-          </div>
 
           <div>
-            <span>دریافت تومان</span>
-            <b>{money(totals.TOMAN.receipt, 'TOMAN')}</b>
+            <span>
+              {lang === 'tr'
+                ? 'USD Bakiye'
+                : 'مانده دلار'}
+            </span>
+
+            <b>
+              {money(totals.USD.balance, 'USD')}
+            </b>
           </div>
 
+
           <div>
-            <span>پرداخت تومان</span>
-            <b>{money(totals.TOMAN.payment, 'TOMAN')}</b>
+            <span>
+              {lang === 'tr'
+                ? 'Toman Tahsilat'
+                : 'دریافت تومان'}
+            </span>
+
+            <b>
+              {money(totals.TOMAN.receipt, 'TOMAN')}
+            </b>
           </div>
+
+
+          <div>
+            <span>
+              {lang === 'tr'
+                ? 'Toman Ödeme'
+                : 'پرداخت تومان'}
+            </span>
+
+            <b>
+              {money(totals.TOMAN.payment, 'TOMAN')}
+            </b>
+          </div>
+
 
           {data.entityType === 'driver' && (
+
             <div>
-              <span>هزینه تومان</span>
-              <b>{money(totals.TOMAN.expense, 'TOMAN')}</b>
+
+              <span>
+                {lang === 'tr'
+                  ? 'Toman Masraf'
+                  : 'هزینه تومان'}
+              </span>
+
+              <b>
+                {money(totals.TOMAN.expense, 'TOMAN')}
+              </b>
+
             </div>
+
           )}
 
+
           <div>
-            <span>مانده تومان</span>
-            <b>{money(totals.TOMAN.balance, 'TOMAN')}</b>
+            <span>
+              {lang === 'tr'
+                ? 'Toman Bakiye'
+                : 'مانده تومان'}
+            </span>
+
+            <b>
+              {money(totals.TOMAN.balance, 'TOMAN')}
+            </b>
           </div>
 
         </div>
@@ -607,7 +791,9 @@ export default function Invoice() {
           </div>
 
           <div className="sign">
-            Signature / امضا
+            {lang === 'tr'
+              ? 'İmza'
+              : 'امضا'}
           </div>
 
         </footer>
