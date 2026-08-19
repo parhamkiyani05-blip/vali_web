@@ -1,17 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { request } from '../lib/api';
+import { getSession, request } from '../lib/api';
 
 export default function DriverAccount() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const role = getSession()?.user?.role;
 
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const [editingId, setEditingId] = useState(null);
+
   const [form, setForm] = useState({
+    type: 'payment',
+    amount: '',
+    currency: 'TOMAN',
+    description: '',
+    occurredAt: ''
+  });
+
+  const [editForm, setEditForm] = useState({
     type: 'payment',
     amount: '',
     currency: 'TOMAN',
@@ -59,14 +71,12 @@ export default function DriverAccount() {
     setBusy(true);
 
     try {
-
       const amount = Number(form.amount);
 
       if (!Number.isFinite(amount) || amount <= 0) {
         setMsg('مبلغ باید بیشتر از صفر باشد.');
         return;
       }
-
 
       await request('/api/transactions', {
         method: 'POST',
@@ -81,7 +91,6 @@ export default function DriverAccount() {
         })
       });
 
-
       setForm({
         type: 'payment',
         amount: '',
@@ -90,13 +99,11 @@ export default function DriverAccount() {
         occurredAt: ''
       });
 
-
       setMsg('عملیات مالی با موفقیت ثبت شد.');
 
       await load();
 
     } catch (err) {
-
       setMsg(
         err.message ||
         'خطا در ثبت عملیات مالی'
@@ -109,13 +116,187 @@ export default function DriverAccount() {
 
 
   // ========================================
+  // آماده‌سازی تاریخ برای datetime-local
+  // ========================================
+  function toDateTimeLocal(value) {
+    if (!value) return '';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    const pad = n =>
+      String(n).padStart(2, '0');
+
+    return (
+      `${date.getFullYear()}-` +
+      `${pad(date.getMonth() + 1)}-` +
+      `${pad(date.getDate())}T` +
+      `${pad(date.getHours())}:` +
+      `${pad(date.getMinutes())}`
+    );
+  }
+
+
+  // ========================================
+  // شروع ویرایش تراکنش
+  // ========================================
+  function startEdit(item) {
+    if (role !== 'manager') return;
+
+    setMsg('');
+    setEditingId(item.id);
+
+    setEditForm({
+      type: item.type || 'payment',
+      amount: String(item.amount ?? ''),
+      currency: item.currency || 'TOMAN',
+      description: item.description || '',
+      occurredAt: toDateTimeLocal(
+        item.occurred_at
+      )
+    });
+  }
+
+
+  // ========================================
+  // لغو ویرایش
+  // ========================================
+  function cancelEdit() {
+    setEditingId(null);
+
+    setEditForm({
+      type: 'payment',
+      amount: '',
+      currency: 'TOMAN',
+      description: '',
+      occurredAt: ''
+    });
+  }
+
+
+  // ========================================
+  // ذخیره ویرایش تراکنش
+  // ========================================
+  async function submitEdit(e) {
+    e.preventDefault();
+
+    if (
+      role !== 'manager' ||
+      !editingId ||
+      busy
+    ) {
+      return;
+    }
+
+    setMsg('');
+    setBusy(true);
+
+    try {
+      const amount =
+        Number(editForm.amount);
+
+      if (
+        !Number.isFinite(amount) ||
+        amount <= 0
+      ) {
+        setMsg(
+          'مبلغ باید بیشتر از صفر باشد.'
+        );
+        return;
+      }
+
+      await request(
+        `/api/transactions/${editingId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            type: editForm.type,
+            amount,
+            currency:
+              editForm.currency,
+            description:
+              editForm.description,
+            occurredAt:
+              editForm.occurredAt ||
+              null
+          })
+        }
+      );
+
+      setMsg(
+        'تراکنش با موفقیت ویرایش شد.'
+      );
+
+      cancelEdit();
+
+      await load();
+
+    } catch (err) {
+      setMsg(
+        err.message ||
+        'خطا در ویرایش تراکنش'
+      );
+
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
+  // ========================================
+  // حذف نرم تراکنش
+  // ========================================
+  async function deleteTransaction(
+    transactionId
+  ) {
+    if (role !== 'manager') return;
+
+    const ok = confirm(
+      'این تراکنش حذف شود؟\n' +
+      'اطلاعات از دیتابیس پاک نمی‌شود و به بایگانی منتقل خواهد شد.'
+    );
+
+    if (!ok) return;
+
+    setMsg('');
+
+    try {
+      await request(
+        `/api/transactions/${transactionId}`,
+        {
+          method: 'DELETE'
+        }
+      );
+
+      if (editingId === transactionId) {
+        cancelEdit();
+      }
+
+      setMsg(
+        'تراکنش به بایگانی منتقل شد.'
+      );
+
+      await load();
+
+    } catch (err) {
+      setMsg(
+        err.message ||
+        'خطا در حذف تراکنش'
+      );
+    }
+  }
+
+
+  // ========================================
   // خلاصه حساب
   // ========================================
   const summary = useMemo(() => {
     if (!data) return null;
 
     const result = {
-
       USD: {
         payment: 0,
         receipt: 0,
@@ -129,59 +310,65 @@ export default function DriverAccount() {
         expense: 0,
         balance: 0
       }
-
     };
 
 
-    for (const item of data.transactions || []) {
+    for (
+      const item of
+      data.transactions || []
+    ) {
+      const currency =
+        item.currency;
 
-      const currency = item.currency;
+      if (!result[currency]) {
+        continue;
+      }
 
-      if (!result[currency]) continue;
-
-      const amount = Number(item.amount || 0);
-
+      const amount =
+        Number(item.amount || 0);
 
       if (item.type === 'payment') {
-        result[currency].payment += amount;
+        result[currency].payment +=
+          amount;
       }
-
 
       if (item.type === 'receipt') {
-        result[currency].receipt += amount;
+        result[currency].receipt +=
+          amount;
       }
-
 
       if (item.type === 'debt') {
-        result[currency].payment += amount;
+        result[currency].payment +=
+          amount;
       }
-
     }
 
 
-    for (const item of data.expenses || []) {
+    for (
+      const item of
+      data.expenses || []
+    ) {
+      const currency =
+        item.currency;
 
-      const currency = item.currency;
-
-      if (!result[currency]) continue;
+      if (!result[currency]) {
+        continue;
+      }
 
       result[currency].expense +=
         Number(item.amount || 0);
-
     }
 
 
-    for (const currency of ['USD', 'TOMAN']) {
-
+    for (
+      const currency of
+      ['USD', 'TOMAN']
+    ) {
       result[currency].balance =
-        result[currency].payment
-        +
-        result[currency].expense
-        -
+        result[currency].payment +
+        result[currency].expense -
         result[currency].receipt;
-
     }
-
 
     return result;
 
@@ -194,30 +381,34 @@ export default function DriverAccount() {
   const rows = useMemo(() => {
     if (!data) return [];
 
-
     const transactions =
-      (data.transactions || []).map(item => ({
-        ...item,
-        source: 'transaction'
-      }));
-
+      (data.transactions || []).map(
+        item => ({
+          ...item,
+          source: 'transaction'
+        })
+      );
 
     const expenses =
-      (data.expenses || []).map(item => ({
-        ...item,
-        type: 'expense',
-        source: 'expense'
-      }));
-
+      (data.expenses || []).map(
+        item => ({
+          ...item,
+          type: 'expense',
+          source: 'expense'
+        })
+      );
 
     return [
       ...transactions,
       ...expenses
     ].sort(
       (a, b) =>
-        new Date(b.occurred_at).getTime()
-        -
-        new Date(a.occurred_at).getTime()
+        new Date(
+          b.occurred_at
+        ).getTime() -
+        new Date(
+          a.occurred_at
+        ).getTime()
     );
 
   }, [data]);
@@ -227,7 +418,6 @@ export default function DriverAccount() {
   // ترجمه نوع عملیات
   // ========================================
   function typeLabel(type) {
-
     if (type === 'payment') {
       return 'پرداخت';
     }
@@ -251,14 +441,17 @@ export default function DriverAccount() {
   // ========================================
   // نمایش مبلغ
   // ========================================
-  function money(value, currency) {
-
-    return `${Number(value || 0).toLocaleString()} ${
+  function money(
+    value,
+    currency
+  ) {
+    return `${Number(
+      value || 0
+    ).toLocaleString()} ${
       currency === 'USD'
         ? '$'
         : 'تومان'
     }`;
-
   }
 
 
@@ -266,9 +459,7 @@ export default function DriverAccount() {
   // خطا
   // ========================================
   if (error) {
-
     return (
-
       <section>
 
         <div className="panel">
@@ -288,9 +479,7 @@ export default function DriverAccount() {
         </div>
 
       </section>
-
     );
-
   }
 
 
@@ -298,9 +487,7 @@ export default function DriverAccount() {
   // Loading
   // ========================================
   if (!data || !summary) {
-
     return (
-
       <section>
 
         <div className="panel">
@@ -308,9 +495,7 @@ export default function DriverAccount() {
         </div>
 
       </section>
-
     );
-
   }
 
 
@@ -318,7 +503,6 @@ export default function DriverAccount() {
 
 
   return (
-
     <section>
 
 
@@ -347,7 +531,9 @@ export default function DriverAccount() {
 
           <button
             onClick={() =>
-              navigate(`/invoice/driver/${id}`)
+              navigate(
+                `/invoice/driver/${id}`
+              )
             }
           >
             فاکتور
@@ -379,7 +565,6 @@ export default function DriverAccount() {
           {driver.name}
         </h3>
 
-
         <p>
           پلاک:{' '}
 
@@ -388,10 +573,8 @@ export default function DriverAccount() {
           </strong>
         </p>
 
-
         <p>
           شماره تماس:{' '}
-
           {driver.phone || '-'}
         </p>
 
@@ -424,9 +607,10 @@ export default function DriverAccount() {
 
         <form
           className="grid-form"
-          onSubmit={submitTransaction}
+          onSubmit={
+            submitTransaction
+          }
         >
-
 
           <label>
 
@@ -437,7 +621,8 @@ export default function DriverAccount() {
               onChange={e =>
                 setForm({
                   ...form,
-                  type: e.target.value
+                  type:
+                    e.target.value
                 })
               }
             >
@@ -455,7 +640,6 @@ export default function DriverAccount() {
           </label>
 
 
-
           <label>
 
             مبلغ
@@ -469,7 +653,8 @@ export default function DriverAccount() {
               onChange={e =>
                 setForm({
                   ...form,
-                  amount: e.target.value
+                  amount:
+                    e.target.value
                 })
               }
             />
@@ -477,17 +662,19 @@ export default function DriverAccount() {
           </label>
 
 
-
           <label>
 
             ارز
 
             <select
-              value={form.currency}
+              value={
+                form.currency
+              }
               onChange={e =>
                 setForm({
                   ...form,
-                  currency: e.target.value
+                  currency:
+                    e.target.value
                 })
               }
             >
@@ -505,18 +692,20 @@ export default function DriverAccount() {
           </label>
 
 
-
           <label>
 
             تاریخ و ساعت
 
             <input
               type="datetime-local"
-              value={form.occurredAt}
+              value={
+                form.occurredAt
+              }
               onChange={e =>
                 setForm({
                   ...form,
-                  occurredAt: e.target.value
+                  occurredAt:
+                    e.target.value
                 })
               }
             />
@@ -524,17 +713,19 @@ export default function DriverAccount() {
           </label>
 
 
-
           <label className="wide">
 
             شرح
 
             <textarea
-              value={form.description}
+              value={
+                form.description
+              }
               onChange={e =>
                 setForm({
                   ...form,
-                  description: e.target.value
+                  description:
+                    e.target.value
                 })
               }
               placeholder="شرح عملیات را بنویسید"
@@ -543,29 +734,215 @@ export default function DriverAccount() {
           </label>
 
 
-
           <button
             disabled={busy}
           >
-
             {busy
               ? 'در حال ثبت...'
               : 'ثبت عملیات'}
-
           </button>
 
         </form>
 
 
         {msg && (
-
           <div className="notice">
             {msg}
           </div>
-
         )}
 
       </div>
+
+
+
+      {/* ========================================
+          فرم ویرایش فقط مدیر
+      ======================================== */}
+
+      {role === 'manager' &&
+        editingId && (
+
+        <div className="panel">
+
+          <div className="section-head">
+
+            <div>
+
+              <h3>
+                ویرایش تراکنش
+              </h3>
+
+              <p>
+                اطلاعات تراکنش انتخاب‌شده را اصلاح کنید.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <form
+            className="grid-form"
+            onSubmit={submitEdit}
+          >
+
+            <label>
+
+              نوع عملیات
+
+              <select
+                value={
+                  editForm.type
+                }
+                onChange={e =>
+                  setEditForm({
+                    ...editForm,
+                    type:
+                      e.target.value
+                  })
+                }
+              >
+
+                <option value="payment">
+                  پرداخت به راننده
+                </option>
+
+                <option value="receipt">
+                  دریافت از راننده
+                </option>
+
+                <option value="debt">
+                  بدهی
+                </option>
+
+              </select>
+
+            </label>
+
+
+            <label>
+
+              مبلغ
+
+              <input
+                required
+                type="number"
+                min="0"
+                step="any"
+                value={
+                  editForm.amount
+                }
+                onChange={e =>
+                  setEditForm({
+                    ...editForm,
+                    amount:
+                      e.target.value
+                  })
+                }
+              />
+
+            </label>
+
+
+            <label>
+
+              ارز
+
+              <select
+                value={
+                  editForm.currency
+                }
+                onChange={e =>
+                  setEditForm({
+                    ...editForm,
+                    currency:
+                      e.target.value
+                  })
+                }
+              >
+
+                <option value="TOMAN">
+                  تومان
+                </option>
+
+                <option value="USD">
+                  دلار
+                </option>
+
+              </select>
+
+            </label>
+
+
+            <label>
+
+              تاریخ و ساعت
+
+              <input
+                type="datetime-local"
+                value={
+                  editForm.occurredAt
+                }
+                onChange={e =>
+                  setEditForm({
+                    ...editForm,
+                    occurredAt:
+                      e.target.value
+                  })
+                }
+              />
+
+            </label>
+
+
+            <label className="wide">
+
+              شرح
+
+              <textarea
+                value={
+                  editForm.description
+                }
+                onChange={e =>
+                  setEditForm({
+                    ...editForm,
+                    description:
+                      e.target.value
+                  })
+                }
+              />
+
+            </label>
+
+
+            <div className="actions">
+
+              <button
+                disabled={busy}
+              >
+                {busy
+                  ? 'در حال ذخیره...'
+                  : 'ذخیره تغییرات'}
+              </button>
+
+
+              <button
+                type="button"
+                className="ghost"
+                onClick={
+                  cancelEdit
+                }
+              >
+                انصراف
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      )}
 
 
 
@@ -582,7 +959,6 @@ export default function DriverAccount() {
 
         <div className="dashboard-grid">
 
-
           <div>
 
             <small>
@@ -597,7 +973,6 @@ export default function DriverAccount() {
             </strong>
 
           </div>
-
 
 
           <div>
@@ -616,7 +991,6 @@ export default function DriverAccount() {
           </div>
 
 
-
           <div>
 
             <small>
@@ -633,7 +1007,6 @@ export default function DriverAccount() {
           </div>
 
 
-
           <div>
 
             <small>
@@ -648,7 +1021,6 @@ export default function DriverAccount() {
             </strong>
 
           </div>
-
 
         </div>
 
@@ -669,7 +1041,6 @@ export default function DriverAccount() {
 
         <div className="dashboard-grid">
 
-
           <div>
 
             <small>
@@ -684,7 +1055,6 @@ export default function DriverAccount() {
             </strong>
 
           </div>
-
 
 
           <div>
@@ -703,7 +1073,6 @@ export default function DriverAccount() {
           </div>
 
 
-
           <div>
 
             <small>
@@ -720,7 +1089,6 @@ export default function DriverAccount() {
           </div>
 
 
-
           <div>
 
             <small>
@@ -735,7 +1103,6 @@ export default function DriverAccount() {
             </strong>
 
           </div>
-
 
         </div>
 
@@ -788,6 +1155,12 @@ export default function DriverAccount() {
                 مبلغ
               </th>
 
+              {role === 'manager' && (
+                <th>
+                  عملیات
+                </th>
+              )}
+
             </tr>
 
           </thead>
@@ -795,33 +1168,33 @@ export default function DriverAccount() {
 
           <tbody>
 
-
             {rows.map(item => (
 
               <tr
-                key={`${item.source}-${item.id}`}
+                key={
+                  `${item.source}-${item.id}`
+                }
               >
-
 
                 <td>
 
                   {item.occurred_at
-
                     ? new Date(
                         item.occurred_at
-                      ).toLocaleString('fa-IR')
-
+                      ).toLocaleString(
+                        'fa-IR'
+                      )
                     : '-'
                   }
 
                 </td>
 
 
-
                 <td>
-                  {typeLabel(item.type)}
+                  {typeLabel(
+                    item.type
+                  )}
                 </td>
-
 
 
                 <td>
@@ -829,37 +1202,82 @@ export default function DriverAccount() {
                 </td>
 
 
-
                 <td>
-
                   {money(
                     item.amount,
                     item.currency
                   )}
-
                 </td>
 
+
+                {role === 'manager' && (
+
+                  <td>
+
+                    {item.source ===
+                    'transaction' ? (
+
+                      <div className="actions">
+
+                        <button
+                          className="ghost"
+                          onClick={() =>
+                            startEdit(
+                              item
+                            )
+                          }
+                        >
+                          ویرایش
+                        </button>
+
+
+                        <button
+                          className="ghost danger"
+                          onClick={() =>
+                            deleteTransaction(
+                              item.id
+                            )
+                          }
+                        >
+                          حذف
+                        </button>
+
+                      </div>
+
+                    ) : (
+
+                      <span>
+                        هزینه
+                      </span>
+
+                    )}
+
+                  </td>
+
+                )}
 
               </tr>
 
             ))}
 
 
-
             {!rows.length && (
 
               <tr>
 
-                <td colSpan="4">
-
+                <td
+                  colSpan={
+                    role === 'manager'
+                      ? '5'
+                      : '4'
+                  }
+                >
                   هنوز تراکنشی برای این راننده ثبت نشده است.
-
                 </td>
 
               </tr>
 
             )}
-
 
           </tbody>
 
@@ -869,7 +1287,5 @@ export default function DriverAccount() {
 
 
     </section>
-
   );
-
 }
