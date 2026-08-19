@@ -12,6 +12,10 @@ export default function Invoice() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
+  const [rangeMode, setRangeMode] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
   const t = labels[lang];
   const rtl = lang === 'fa';
 
@@ -25,6 +29,7 @@ export default function Invoice() {
 
         if (isCompany && id) {
           const result = await request(`/api/companies/${id}/account`);
+
           setData({
             entityType: 'company',
             entity: result.company,
@@ -62,7 +67,7 @@ export default function Invoice() {
     load();
   }, [id, isCompany, isDriver]);
 
-  const rows = useMemo(() => {
+  const allRows = useMemo(() => {
     if (!data) return [];
 
     const transactionRows = (data.transactions || []).map(item => ({
@@ -92,6 +97,67 @@ export default function Invoice() {
     );
   }, [data]);
 
+  const filteredRows = useMemo(() => {
+    if (rangeMode === 'all') {
+      return allRows;
+    }
+
+    const now = new Date();
+
+    if (rangeMode === 'month') {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1,
+        0,
+        0,
+        0,
+        0
+      );
+
+      const end = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+
+      return allRows.filter(row => {
+        const date = new Date(row.occurredAt);
+        return date >= start && date <= end;
+      });
+    }
+
+    if (rangeMode === 'custom') {
+      return allRows.filter(row => {
+        const date = new Date(row.occurredAt);
+
+        if (fromDate) {
+          const start = new Date(`${fromDate}T00:00:00`);
+
+          if (date < start) {
+            return false;
+          }
+        }
+
+        if (toDate) {
+          const end = new Date(`${toDate}T23:59:59`);
+
+          if (date > end) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    return allRows;
+  }, [allRows, rangeMode, fromDate, toDate]);
+
   const totals = useMemo(() => {
     const result = {
       USD: {
@@ -110,7 +176,7 @@ export default function Invoice() {
       }
     };
 
-    for (const row of rows) {
+    for (const row of filteredRows) {
       if (!result[row.currency]) continue;
 
       if (row.type === 'receipt') {
@@ -146,7 +212,7 @@ export default function Invoice() {
     }
 
     return result;
-  }, [rows, data]);
+  }, [filteredRows, data]);
 
   function money(value, currency) {
     return `${Number(value || 0).toLocaleString()} ${
@@ -182,15 +248,49 @@ export default function Invoice() {
     }
   }
 
+  function rangeLabel() {
+    if (rangeMode === 'all') {
+      return lang === 'tr'
+        ? 'Tüm işlemler'
+        : 'همه تراکنش‌ها';
+    }
+
+    if (rangeMode === 'month') {
+      return lang === 'tr'
+        ? 'Bu ay'
+        : 'این ماه';
+    }
+
+    if (rangeMode === 'custom') {
+      if (fromDate && toDate) {
+        return `${fromDate} - ${toDate}`;
+      }
+
+      if (fromDate) {
+        return `${lang === 'tr' ? 'Başlangıç' : 'از'} ${fromDate}`;
+      }
+
+      if (toDate) {
+        return `${lang === 'tr' ? 'Bitiş' : 'تا'} ${toDate}`;
+      }
+
+      return lang === 'tr'
+        ? 'Özel tarih aralığı'
+        : 'بازه دلخواه';
+    }
+
+    return '';
+  }
+
   if (error) {
     return (
       <section>
         <div className="panel">
-          <div className="error">{error}</div>
+          <div className="error">
+            {error}
+          </div>
 
-          <button
-            onClick={() => navigate(-1)}
-          >
+          <button onClick={() => navigate(-1)}>
             بازگشت
           </button>
         </div>
@@ -222,9 +322,10 @@ export default function Invoice() {
           <h2>فاکتور حساب</h2>
 
           <p>
-            ریز تراکنش‌ها، جمع دلار و تومان و خروجی مخصوص چاپ A5
+            بازه زمانی، ریز تراکنش‌ها و جمع مستقل دلار و تومان
           </p>
         </div>
+
 
         <div className="actions">
 
@@ -261,6 +362,61 @@ export default function Invoice() {
       </div>
 
 
+      <div className="panel no-print">
+
+        <div className="grid-form">
+
+          <label>
+            بازه فاکتور
+
+            <select
+              value={rangeMode}
+              onChange={e => setRangeMode(e.target.value)}
+            >
+              <option value="all">
+                همه تراکنش‌ها
+              </option>
+
+              <option value="month">
+                این ماه
+              </option>
+
+              <option value="custom">
+                بازه دلخواه
+              </option>
+            </select>
+          </label>
+
+
+          {rangeMode === 'custom' && (
+            <>
+              <label>
+                از تاریخ
+
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={e => setFromDate(e.target.value)}
+                />
+              </label>
+
+              <label>
+                تا تاریخ
+
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={e => setToDate(e.target.value)}
+                />
+              </label>
+            </>
+          )}
+
+        </div>
+
+      </div>
+
+
       <div
         className="invoice-sheet"
         dir={rtl ? 'rtl' : 'ltr'}
@@ -274,6 +430,10 @@ export default function Invoice() {
             <p>
               {t.invoice || 'Invoice'} #{invoiceNumber}
             </p>
+
+            <small>
+              {rangeLabel()}
+            </small>
           </div>
 
           <div className="invoice-badge">
@@ -342,7 +502,7 @@ export default function Invoice() {
 
           <tbody>
 
-            {rows.map(row => (
+            {filteredRows.map(row => (
 
               <tr key={row.id}>
 
@@ -367,13 +527,13 @@ export default function Invoice() {
             ))}
 
 
-            {!rows.length && (
+            {!filteredRows.length && (
 
               <tr>
                 <td colSpan="4">
                   {lang === 'tr'
-                    ? 'Henüz işlem bulunmuyor.'
-                    : 'هنوز تراکنشی ثبت نشده است.'
+                    ? 'Bu tarih aralığında işlem bulunmuyor.'
+                    : 'در این بازه زمانی تراکنشی ثبت نشده است.'
                   }
                 </td>
               </tr>
@@ -388,94 +548,47 @@ export default function Invoice() {
         <div className="invoice-totals">
 
           <div>
-            <span>
-              {lang === 'tr' ? 'USD Tahsilat' : 'دریافت دلار'}
-            </span>
-
-            <b>
-              {money(totals.USD.receipt, 'USD')}
-            </b>
+            <span>دریافت دلار</span>
+            <b>{money(totals.USD.receipt, 'USD')}</b>
           </div>
-
 
           <div>
-            <span>
-              {lang === 'tr' ? 'USD Ödeme' : 'پرداخت دلار'}
-            </span>
-
-            <b>
-              {money(totals.USD.payment, 'USD')}
-            </b>
+            <span>پرداخت دلار</span>
+            <b>{money(totals.USD.payment, 'USD')}</b>
           </div>
-
 
           {data.entityType === 'driver' && (
             <div>
-              <span>
-                {lang === 'tr' ? 'USD Masraf' : 'هزینه دلار'}
-              </span>
-
-              <b>
-                {money(totals.USD.expense, 'USD')}
-              </b>
+              <span>هزینه دلار</span>
+              <b>{money(totals.USD.expense, 'USD')}</b>
             </div>
           )}
 
-
           <div>
-            <span>
-              {lang === 'tr' ? 'USD Bakiye' : 'مانده دلار'}
-            </span>
-
-            <b>
-              {money(totals.USD.balance, 'USD')}
-            </b>
+            <span>مانده دلار</span>
+            <b>{money(totals.USD.balance, 'USD')}</b>
           </div>
 
-
           <div>
-            <span>
-              {lang === 'tr' ? 'Toman Tahsilat' : 'دریافت تومان'}
-            </span>
-
-            <b>
-              {money(totals.TOMAN.receipt, 'TOMAN')}
-            </b>
+            <span>دریافت تومان</span>
+            <b>{money(totals.TOMAN.receipt, 'TOMAN')}</b>
           </div>
 
-
           <div>
-            <span>
-              {lang === 'tr' ? 'Toman Ödeme' : 'پرداخت تومان'}
-            </span>
-
-            <b>
-              {money(totals.TOMAN.payment, 'TOMAN')}
-            </b>
+            <span>پرداخت تومان</span>
+            <b>{money(totals.TOMAN.payment, 'TOMAN')}</b>
           </div>
-
 
           {data.entityType === 'driver' && (
             <div>
-              <span>
-                {lang === 'tr' ? 'Toman Masraf' : 'هزینه تومان'}
-              </span>
-
-              <b>
-                {money(totals.TOMAN.expense, 'TOMAN')}
-              </b>
+              <span>هزینه تومان</span>
+              <b>{money(totals.TOMAN.expense, 'TOMAN')}</b>
             </div>
           )}
 
-
           <div>
-            <span>
-              {lang === 'tr' ? 'Toman Bakiye' : 'مانده تومان'}
-            </span>
-
-            <b>
-              {money(totals.TOMAN.balance, 'TOMAN')}
-            </b>
+            <span>مانده تومان</span>
+            <b>{money(totals.TOMAN.balance, 'TOMAN')}</b>
           </div>
 
         </div>
