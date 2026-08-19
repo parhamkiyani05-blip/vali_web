@@ -108,6 +108,24 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/invoice/driver/:id"
+          element={
+            <Guard roles={['manager', 'office']}>
+              <Invoice />
+            </Guard>
+          }
+        />
+
+        <Route
+          path="/invoice/company/:id"
+          element={
+            <Guard roles={['manager']}>
+              <Invoice />
+            </Guard>
+          }
+        />
+
       </Route>
 
     </Routes>
