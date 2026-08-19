@@ -54,6 +54,10 @@ export default function Invoice() {
             expenses: result.expenses || []
           });
 
+          if (result.driver?.language) {
+            setLang(result.driver.language);
+          }
+
           return;
         }
 
@@ -176,6 +180,7 @@ export default function Invoice() {
         debt: 0,
         balance: 0
       },
+
       TOMAN: {
         receipt: 0,
         payment: 0,
@@ -378,9 +383,7 @@ export default function Invoice() {
           </button>
 
 
-          <button
-            onClick={() => window.print()}
-          >
+          <button onClick={() => window.print()}>
             {lang === 'tr'
               ? 'Yazdır / PDF'
               : 'چاپ / PDF'}
@@ -479,7 +482,9 @@ export default function Invoice() {
           <div>
 
             <h1>
-              VALI TRANSPORT
+              {lang === 'tr'
+                ? 'VALİ KARDEŞLER TRANSPORT'
+                : 'شرکت حمل و نقل برادران والی'}
             </h1>
 
             <p>
@@ -782,12 +787,12 @@ export default function Invoice() {
 
           <div>
             <b>VAHID VALI</b>
-            <span>TEL: 09120801384</span>
+            <span>TEL: +989120801384</span>
           </div>
 
           <div>
             <b>HABIB VALI</b>
-            <span>TEL: 09147257526</span>
+            <span>TEL: +989147257526</span>
           </div>
 
           <div className="sign">
