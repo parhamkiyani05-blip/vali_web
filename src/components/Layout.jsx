@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
+  BarChart3,
   Building2,
   FileText,
   Gauge,
@@ -17,7 +18,6 @@ import {
 
 
 export default function Layout() {
-
   const nav = useNavigate();
   const session = getSession();
   const role = session?.user?.role;
@@ -62,6 +62,18 @@ export default function Layout() {
     ],
 
 
+    ...(role !== 'employee'
+      ? [
+          [
+            '/reports',
+            BarChart3,
+            'گزارش‌ها'
+          ]
+        ]
+      : []
+    ),
+
+
     ...(role === 'manager'
       ? [
           [
@@ -89,16 +101,12 @@ export default function Layout() {
 
 
   function logout() {
-
     clearSession();
-
     nav('/login');
-
   }
 
 
   function roleLabel() {
-
     if (role === 'manager') {
       return 'مدیر';
     }
@@ -108,12 +116,10 @@ export default function Layout() {
     }
 
     return 'کارمند';
-
   }
 
 
   return (
-
     <div className="app-shell">
 
       <aside className="sidebar">
@@ -125,7 +131,6 @@ export default function Layout() {
           </div>
 
           <div>
-
             <b>
               VALI
             </b>
@@ -133,7 +138,6 @@ export default function Layout() {
             <span>
               TRANSPORT
             </span>
-
           </div>
 
         </div>
@@ -164,11 +168,8 @@ export default function Layout() {
           className="logout"
           onClick={logout}
         >
-
           <LogOut size={18} />
-
           خروج
-
         </button>
 
       </aside>
@@ -203,7 +204,5 @@ export default function Layout() {
       </main>
 
     </div>
-
   );
-
 }
