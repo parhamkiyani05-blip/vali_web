@@ -10,6 +10,7 @@ import Companies from './pages/Companies';
 import CompanyAccount from './pages/CompanyAccount';
 import Users from './pages/Users';
 import Invoice from './pages/Invoice';
+import Reports from './pages/Reports';
 
 import { getSession } from './lib/api';
 
@@ -86,6 +87,15 @@ export default function App() {
           element={
             <Guard roles={['manager']}>
               <CompanyAccount />
+            </Guard>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <Guard roles={['manager', 'office']}>
+              <Reports />
             </Guard>
           }
         />
