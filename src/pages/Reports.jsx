@@ -41,6 +41,7 @@ export default function Reports() {
         error.message ||
         'خطا در دریافت گزارش مالی'
       );
+
     } finally {
       setLoading(false);
     }
@@ -79,6 +80,19 @@ export default function Reports() {
   }
 
 
+  function reportTypeLabel() {
+    if (entityType === 'driver') {
+      return 'راننده‌ها';
+    }
+
+    if (entityType === 'company') {
+      return 'شرکت‌ها';
+    }
+
+    return 'همه حساب‌ها';
+  }
+
+
   function formatDate(value) {
     if (!value) return '—';
 
@@ -88,6 +102,11 @@ export default function Reports() {
     } catch {
       return value;
     }
+  }
+
+
+  function printReport() {
+    window.print();
   }
 
 
@@ -113,7 +132,11 @@ export default function Reports() {
   return (
     <section>
 
-      <div className="section-head">
+      {/* ========================================
+          عنوان و دکمه چاپ
+      ======================================== */}
+
+      <div className="section-head no-print">
 
         <div>
           <h2>
@@ -125,10 +148,25 @@ export default function Reports() {
           </p>
         </div>
 
+
+        <div className="actions">
+
+          {data && (
+            <button onClick={printReport}>
+              چاپ / PDF
+            </button>
+          )}
+
+        </div>
+
       </div>
 
 
-      <div className="panel">
+      {/* ========================================
+          فیلترها
+      ======================================== */}
+
+      <div className="panel no-print">
 
         <div className="grid-form">
 
@@ -163,6 +201,7 @@ export default function Reports() {
               )}
 
             </select>
+
           </label>
 
 
@@ -215,9 +254,55 @@ export default function Reports() {
 
       {data && (
 
-        <>
+        <div className="report-print-area">
 
-          <div className="cards">
+
+          {/* ========================================
+              سربرگ نسخه چاپی
+          ======================================== */}
+
+          <div className="report-print-header">
+
+            <h1>
+              شرکت حمل و نقل برادران والی
+            </h1>
+
+            <h2>
+              گزارش مالی
+            </h2>
+
+            <div className="report-print-meta">
+
+              <span>
+                <b>نوع گزارش:</b>{' '}
+                {reportTypeLabel()}
+              </span>
+
+              <span>
+                <b>از تاریخ:</b>{' '}
+                {from || 'ابتدای اطلاعات'}
+              </span>
+
+              <span>
+                <b>تا تاریخ:</b>{' '}
+                {to || 'آخرین اطلاعات'}
+              </span>
+
+              <span>
+                <b>تعداد عملیات:</b>{' '}
+                {rowCount}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          {/* ========================================
+              کارت‌های خلاصه
+          ======================================== */}
+
+          <div className="cards report-summary-cards">
 
             <div className="stat">
               <span>
@@ -236,11 +321,7 @@ export default function Reports() {
               </span>
 
               <b>
-                {entityType === 'driver'
-                  ? 'راننده‌ها'
-                  : entityType === 'company'
-                    ? 'شرکت‌ها'
-                    : 'همه حساب‌ها'}
+                {reportTypeLabel()}
               </b>
             </div>
 
@@ -269,26 +350,35 @@ export default function Reports() {
           </div>
 
 
+          {/* ========================================
+              گزارش راننده‌ها
+          ======================================== */}
+
           {data.driverSummary && (
 
-            <div className="panel">
+            <div className="panel report-section">
 
               <div className="section-head">
+
                 <div>
+
                   <h3>
-                    🚛 گزارش حساب راننده‌ها
+                    گزارش حساب راننده‌ها
                   </h3>
 
                   <p>
                     جمع دریافت، پرداخت، هزینه، بدهی و مانده
                   </p>
+
                 </div>
+
               </div>
 
 
               <h4>
                 دلار
               </h4>
+
 
               <div className="dashboard-grid">
 
@@ -368,6 +458,7 @@ export default function Reports() {
                 تومان
               </h4>
 
+
               <div className="dashboard-grid">
 
                 <div>
@@ -446,26 +537,35 @@ export default function Reports() {
           )}
 
 
+          {/* ========================================
+              گزارش شرکت‌ها
+          ======================================== */}
+
           {data.companySummary && (
 
-            <div className="panel">
+            <div className="panel report-section">
 
               <div className="section-head">
+
                 <div>
+
                   <h3>
-                    🏢 گزارش حساب شرکت‌ها
+                    گزارش حساب شرکت‌ها
                   </h3>
 
                   <p>
                     جمع دریافت، پرداخت، بدهی و مانده
                   </p>
+
                 </div>
+
               </div>
 
 
               <h4>
                 دلار
               </h4>
+
 
               <div className="dashboard-grid">
 
@@ -531,6 +631,7 @@ export default function Reports() {
                 تومان
               </h4>
 
+
               <div className="dashboard-grid">
 
                 <div>
@@ -595,11 +696,16 @@ export default function Reports() {
           )}
 
 
-          <div className="panel">
+          {/* ========================================
+              ریز عملیات مالی
+          ======================================== */}
+
+          <div className="panel report-section">
 
             <div className="section-head">
 
               <div>
+
                 <h3>
                   ریز عملیات مالی
                 </h3>
@@ -607,6 +713,7 @@ export default function Reports() {
                 <p>
                   تمام عملیات موجود در بازه انتخاب‌شده
                 </p>
+
               </div>
 
             </div>
@@ -617,14 +724,39 @@ export default function Reports() {
               <thead>
 
                 <tr>
-                  <th>تاریخ</th>
-                  <th>نوع حساب</th>
-                  <th>طرف حساب</th>
-                  <th>پلاک</th>
-                  <th>نوع عملیات</th>
-                  <th>شرح</th>
-                  <th>مبلغ</th>
-                  <th>ثبت‌کننده</th>
+
+                  <th>
+                    تاریخ
+                  </th>
+
+                  <th>
+                    نوع حساب
+                  </th>
+
+                  <th>
+                    طرف حساب
+                  </th>
+
+                  <th>
+                    پلاک
+                  </th>
+
+                  <th>
+                    نوع عملیات
+                  </th>
+
+                  <th>
+                    شرح
+                  </th>
+
+                  <th>
+                    مبلغ
+                  </th>
+
+                  <th>
+                    ثبت‌کننده
+                  </th>
+
                 </tr>
 
               </thead>
@@ -713,7 +845,44 @@ export default function Reports() {
 
           </div>
 
-        </>
+
+          {/* ========================================
+              امضا
+          ======================================== */}
+
+          <div className="report-signatures">
+
+            <div>
+              <b>
+                VAHID VALI
+              </b>
+
+              <span>
+                TEL: 09120801384
+              </span>
+            </div>
+
+
+            <div>
+              <b>
+                HABIB VALI
+              </b>
+
+              <span>
+                TEL: 09147257526
+              </span>
+            </div>
+
+
+            <div>
+              <b>
+                امضا
+              </b>
+            </div>
+
+          </div>
+
+        </div>
 
       )}
 
