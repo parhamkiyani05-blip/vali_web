@@ -20,12 +20,15 @@ export default function Expenses(){
 
 
   async function load(){
+
     if(role==='employee') return;
 
     try{
       setItems(await request('/api/expenses'));
     }catch{}
+
   }
+
 
 
   useEffect(()=>{
@@ -34,7 +37,6 @@ export default function Expenses(){
 
 
 
-  // جستجوی راننده / پلاک
   async function searchDriver(value){
 
     setSearch(value);
@@ -56,7 +58,9 @@ export default function Expenses(){
       setDrivers(data);
 
     }catch{
+
       setDrivers([]);
+
     }
 
   }
@@ -64,15 +68,19 @@ export default function Expenses(){
 
 
 
+
   async function submit(e){
 
     e.preventDefault();
+
     setMsg('');
 
 
     if(!selectedDriver){
+
       setMsg('لطفاً ابتدا راننده یا پلاک را انتخاب کنید.');
       return;
+
     }
 
 
@@ -92,6 +100,7 @@ export default function Expenses(){
 
     try{
 
+
       await request('/api/expenses',{
         method:'POST',
         body:JSON.stringify(payload)
@@ -103,14 +112,26 @@ export default function Expenses(){
       load();
 
 
-    }catch{
+    }catch(error){
 
 
-      const n = queueExpense(payload);
+      if(!navigator.onLine){
 
-      setMsg(
-        `اینترنت/سرور در دسترس نبود؛ هزینه آفلاین ذخیره شد (${n} مورد منتظر ارسال).`
-      );
+        const n = queueExpense(payload);
+
+        setMsg(
+          `اینترنت قطع است؛ هزینه آفلاین ذخیره شد (${n} مورد منتظر ارسال).`
+        );
+
+      }
+      else{
+
+        setMsg(
+          error.message || 'خطا در ثبت هزینه'
+        );
+
+      }
+
 
     }
 
@@ -126,7 +147,9 @@ export default function Expenses(){
     setSelectedDriver(null);
     setDrivers([]);
 
+
   }
+
 
 
 
@@ -143,6 +166,7 @@ export default function Expenses(){
       }
     );
 
+
     load();
 
   }
@@ -150,7 +174,31 @@ export default function Expenses(){
 
 
 
-  return (
+
+  async function removeExpense(id){
+
+
+    if(!confirm('این هزینه حذف شود؟')) return;
+
+
+    await request(
+      `/api/expenses/${id}`,
+      {
+        method:'DELETE'
+      }
+    );
+
+
+    load();
+
+
+  }
+
+
+
+
+
+return (
 
 <section>
 
@@ -158,10 +206,13 @@ export default function Expenses(){
 <div className="section-head">
 
 <div>
-<h2>ثبت هزینه</h2>
+
+<h2>
+هزینه‌ها
+</h2>
 
 <p>
-انتخاب پلاک، شرح آزاد، ثبت دلار یا تومان
+ثبت هزینه بر اساس پلاک و راننده
 </p>
 
 </div>
@@ -173,12 +224,14 @@ export default function Expenses(){
 
 <div className="panel">
 
+
 <form className="grid-form" onSubmit={submit}>
 
 
 <label className="wide">
 
 جستجوی راننده یا پلاک
+
 
 <input
 
@@ -197,12 +250,15 @@ placeholder="نام راننده یا شماره پلاک"
 
 
 
-{drivers.length > 0 && (
+
+{
+drivers.length>0 &&
 
 <div className="wide">
 
 {
 drivers.map(d=>(
+
 
 <div
 
@@ -226,22 +282,28 @@ setDrivers([]);
 
 {d.name}
 
-&nbsp; - &nbsp;
+-
 
 {d.truck_number}
 
+
 </div>
+
 
 ))
 }
 
+
 </div>
 
-)}
+}
 
 
 
-{selectedDriver && (
+
+
+{
+selectedDriver &&
 
 <div className="notice">
 
@@ -249,13 +311,13 @@ setDrivers([]);
 
 {selectedDriver.name}
 
-&nbsp;
+-
 
-({selectedDriver.truck_number})
+{selectedDriver.truck_number}
 
 </div>
 
-)}
+}
 
 
 
@@ -284,6 +346,7 @@ amount:e.target.value
 />
 
 </label>
+
 
 
 
@@ -324,6 +387,7 @@ currency:e.target.value
 
 
 
+
 <label className="wide">
 
 شرح
@@ -340,11 +404,11 @@ description:e.target.value
 })
 }
 
-
 />
 
 
 </label>
+
 
 
 
@@ -356,13 +420,16 @@ description:e.target.value
 </form>
 
 
-{msg &&
+
+{
+msg &&
 
 <div className="notice">
 {msg}
 </div>
 
 }
+
 
 
 </div>
@@ -374,10 +441,12 @@ description:e.target.value
 {
 role!=='employee' &&
 
+
 <div className="panel">
 
 
 <table>
+
 
 <thead>
 
@@ -400,12 +469,13 @@ role!=='employee' &&
 </thead>
 
 
+
 <tbody>
 
 
 {
-
 items.map(x=>(
+
 
 <tr key={x.id}>
 
@@ -436,17 +506,14 @@ items.map(x=>(
 </td>
 
 
-<td>
 
-<span className={`status ${x.status}`}>
+<td>
 
 {x.status==='pending'
 ?'منتظر'
 :x.status==='approved'
 ?'تأیید'
 :'رد'}
-
-</span>
 
 </td>
 
@@ -458,42 +525,53 @@ items.map(x=>(
 {
 x.status==='pending' &&
 
-<div className="actions">
+<>
+
+<button
+onClick={()=>decision(x.id,'approved')}
+>
+تأیید
+</button>
 
 
 <button
-
-onClick={()=>decision(x.id,'approved')}
-
+className="ghost danger"
+onClick={()=>decision(x.id,'rejected')}
 >
-
-تأیید
-
+رد
 </button>
 
+</>
+
+}
+
+
+
+{
+role==='manager' &&
 
 <button
 
 className="ghost danger"
 
-onClick={()=>decision(x.id,'rejected')}
+onClick={()=>removeExpense(x.id)}
 
 >
 
-رد
+حذف
 
 </button>
 
-
-</div>
-
 }
+
 
 
 </td>
 
 
+
 </tr>
+
 
 ))
 
@@ -507,6 +585,7 @@ onClick={()=>decision(x.id,'rejected')}
 
 
 </div>
+
 
 }
 
