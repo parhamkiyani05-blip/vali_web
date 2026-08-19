@@ -7,6 +7,7 @@ import Expenses from './pages/Expenses';
 import Drivers from './pages/Drivers';
 import DriverAccount from './pages/DriverAccount';
 import Companies from './pages/Companies';
+import CompanyAccount from './pages/CompanyAccount';
 import Users from './pages/Users';
 import Invoice from './pages/Invoice';
 
@@ -76,6 +77,15 @@ export default function App() {
           element={
             <Guard roles={['manager']}>
               <Companies />
+            </Guard>
+          }
+        />
+
+        <Route
+          path="/companies/:id/account"
+          element={
+            <Guard roles={['manager']}>
+              <CompanyAccount />
             </Guard>
           }
         />
