@@ -103,6 +103,7 @@ export default function DriverAccount() {
     if (type === 'receipt') return 'دریافت';
     if (type === 'expense') return 'هزینه';
     if (type === 'debt') return 'بدهی';
+
     return type;
   }
 
@@ -116,11 +117,17 @@ export default function DriverAccount() {
     return (
       <section>
         <div className="panel">
-          <div className="error">{error}</div>
 
-          <button onClick={() => navigate('/drivers')}>
+          <div className="error">
+            {error}
+          </div>
+
+          <button
+            onClick={() => navigate('/drivers')}
+          >
             بازگشت
           </button>
+
         </div>
       </section>
     );
@@ -142,29 +149,56 @@ export default function DriverAccount() {
     <section>
 
       <div className="section-head">
+
         <div>
-          <h2>حساب راننده</h2>
+
+          <h2>
+            حساب راننده
+          </h2>
 
           <p>
             {driver.name} - {driver.truck_number}
           </p>
+
         </div>
 
-        <button
-          className="ghost"
-          onClick={() => navigate('/drivers')}
-        >
-          بازگشت
-        </button>
+
+        <div className="actions">
+
+          <button
+            onClick={() =>
+              navigate(`/invoice/driver/${id}`)
+            }
+          >
+            فاکتور
+          </button>
+
+
+          <button
+            className="ghost"
+            onClick={() =>
+              navigate('/drivers')
+            }
+          >
+            بازگشت
+          </button>
+
+        </div>
+
       </div>
 
 
       <div className="panel">
 
-        <h3>{driver.name}</h3>
+        <h3>
+          {driver.name}
+        </h3>
 
         <p>
-          پلاک: <strong>{driver.truck_number}</strong>
+          پلاک:{' '}
+          <strong>
+            {driver.truck_number}
+          </strong>
         </p>
 
         <p>
@@ -176,36 +210,61 @@ export default function DriverAccount() {
 
       <div className="panel">
 
-        <h3>حساب دلار</h3>
+        <h3>
+          حساب دلار
+        </h3>
 
         <div className="dashboard-grid">
 
           <div>
-            <small>پرداخت</small>
+
+            <small>
+              پرداخت
+            </small>
+
             <strong>
               {money(summary.USD.payment, 'USD')}
             </strong>
+
           </div>
 
+
           <div>
-            <small>دریافت</small>
+
+            <small>
+              دریافت
+            </small>
+
             <strong>
               {money(summary.USD.receipt, 'USD')}
             </strong>
+
           </div>
 
+
           <div>
-            <small>هزینه</small>
+
+            <small>
+              هزینه
+            </small>
+
             <strong>
               {money(summary.USD.expense, 'USD')}
             </strong>
+
           </div>
 
+
           <div>
-            <small>مانده</small>
+
+            <small>
+              مانده
+            </small>
+
             <strong>
               {money(summary.USD.balance, 'USD')}
             </strong>
+
           </div>
 
         </div>
@@ -215,36 +274,61 @@ export default function DriverAccount() {
 
       <div className="panel">
 
-        <h3>حساب تومان</h3>
+        <h3>
+          حساب تومان
+        </h3>
 
         <div className="dashboard-grid">
 
           <div>
-            <small>پرداخت</small>
+
+            <small>
+              پرداخت
+            </small>
+
             <strong>
               {money(summary.TOMAN.payment, 'TOMAN')}
             </strong>
+
           </div>
 
+
           <div>
-            <small>دریافت</small>
+
+            <small>
+              دریافت
+            </small>
+
             <strong>
               {money(summary.TOMAN.receipt, 'TOMAN')}
             </strong>
+
           </div>
 
+
           <div>
-            <small>هزینه</small>
+
+            <small>
+              هزینه
+            </small>
+
             <strong>
               {money(summary.TOMAN.expense, 'TOMAN')}
             </strong>
+
           </div>
 
+
           <div>
-            <small>مانده</small>
+
+            <small>
+              مانده
+            </small>
+
             <strong>
               {money(summary.TOMAN.balance, 'TOMAN')}
             </strong>
+
           </div>
 
         </div>
@@ -255,56 +339,96 @@ export default function DriverAccount() {
       <div className="panel">
 
         <div className="section-head">
+
           <div>
-            <h3>ریز حساب</h3>
-            <p>تمام پرداخت‌ها، دریافت‌ها و هزینه‌ها</p>
+
+            <h3>
+              ریز حساب
+            </h3>
+
+            <p>
+              تمام پرداخت‌ها، دریافت‌ها و هزینه‌ها
+            </p>
+
           </div>
+
         </div>
 
 
         <table>
 
           <thead>
+
             <tr>
-              <th>تاریخ</th>
-              <th>نوع</th>
-              <th>شرح</th>
-              <th>مبلغ</th>
+
+              <th>
+                تاریخ
+              </th>
+
+              <th>
+                نوع
+              </th>
+
+              <th>
+                شرح
+              </th>
+
+              <th>
+                مبلغ
+              </th>
+
             </tr>
+
           </thead>
+
 
           <tbody>
 
             {rows.map(item => (
 
-              <tr key={`${item.source}-${item.id}`}>
+              <tr
+                key={`${item.source}-${item.id}`}
+              >
 
                 <td>
-                  {new Date(item.occurred_at).toLocaleString('fa-IR')}
+                  {new Date(
+                    item.occurred_at
+                  ).toLocaleString('fa-IR')}
                 </td>
+
 
                 <td>
                   {typeLabel(item.type)}
                 </td>
 
+
                 <td>
                   {item.description || '-'}
                 </td>
 
+
                 <td>
-                  {money(item.amount, item.currency)}
+                  {money(
+                    item.amount,
+                    item.currency
+                  )}
                 </td>
 
               </tr>
 
             ))}
 
+
             {!rows.length && (
+
               <tr>
+
                 <td colSpan="4">
                   هنوز تراکنشی برای این راننده ثبت نشده است.
                 </td>
+
               </tr>
+
             )}
 
           </tbody>
