@@ -41,7 +41,6 @@ export default function Reports() {
         error.message ||
         'خطا در دریافت گزارش مالی'
       );
-
     } finally {
       setLoading(false);
     }
@@ -72,27 +71,6 @@ export default function Reports() {
   }
 
 
-  function entityLabel(type) {
-    if (type === 'company') return 'شرکت';
-    if (type === 'driver') return 'راننده';
-
-    return type;
-  }
-
-
-  function reportTypeLabel() {
-    if (entityType === 'driver') {
-      return 'راننده‌ها';
-    }
-
-    if (entityType === 'company') {
-      return 'شرکت‌ها';
-    }
-
-    return 'همه حساب‌ها';
-  }
-
-
   function formatDate(value) {
     if (!value) return '—';
 
@@ -105,9 +83,177 @@ export default function Reports() {
   }
 
 
+  function reportTypeLabel() {
+    if (entityType === 'driver') {
+      return 'رانندگان';
+    }
+
+    if (entityType === 'company') {
+      return 'شرکت‌ها';
+    }
+
+    return 'رانندگان و شرکت‌ها';
+  }
+
+
   function printReport() {
     window.print();
   }
+
+
+  // ========================================
+  // خلاصه هر گروه
+  // ========================================
+  function calculateGroupSummary(rows, groupType) {
+    const result = {
+      USD: {
+        receipt: 0,
+        payment: 0,
+        expense: 0,
+        debt: 0,
+        balance: 0
+      },
+      TOMAN: {
+        receipt: 0,
+        payment: 0,
+        expense: 0,
+        debt: 0,
+        balance: 0
+      }
+    };
+
+    for (const row of rows) {
+      if (!result[row.currency]) {
+        continue;
+      }
+
+      const amount = Number(row.amount || 0);
+
+      if (row.type === 'receipt') {
+        result[row.currency].receipt += amount;
+      }
+
+      if (row.type === 'payment') {
+        result[row.currency].payment += amount;
+      }
+
+      if (row.type === 'expense') {
+        result[row.currency].expense += amount;
+      }
+
+      if (row.type === 'debt') {
+        result[row.currency].debt += amount;
+      }
+    }
+
+    for (const currency of ['USD', 'TOMAN']) {
+      if (groupType === 'company') {
+        result[currency].balance =
+          result[currency].receipt -
+          result[currency].payment -
+          result[currency].debt;
+      } else {
+        result[currency].balance =
+          result[currency].payment +
+          result[currency].expense +
+          result[currency].debt -
+          result[currency].receipt;
+      }
+    }
+
+    return result;
+  }
+
+
+  // ========================================
+  // گروه‌بندی ردیف‌ها بر اساس راننده / شرکت
+  // ========================================
+  const groupedRows = useMemo(() => {
+    const groups = {};
+
+    for (const row of data?.rows || []) {
+      const key =
+        `${row.entityType}-${row.entityId || row.entityName}`;
+
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          entityType: row.entityType,
+          entityId: row.entityId,
+          entityName: row.entityName || 'بدون نام',
+          plate: row.plate || '',
+          rows: []
+        };
+      }
+
+      groups[key].rows.push(row);
+    }
+
+    return Object.values(groups)
+      .map(group => ({
+        ...group,
+        summary: calculateGroupSummary(
+          group.rows,
+          group.entityType
+        )
+      }))
+      .sort((a, b) => {
+        if (
+          a.entityType === 'driver' &&
+          b.entityType === 'driver'
+        ) {
+          return String(a.plate || '')
+            .localeCompare(
+              String(b.plate || ''),
+              'fa'
+            );
+        }
+
+        return String(a.entityName || '')
+          .localeCompare(
+            String(b.entityName || ''),
+            'fa'
+          );
+      });
+
+  }, [data]);
+
+
+  const driverGroups = useMemo(
+    () =>
+      groupedRows.filter(
+        item =>
+          item.entityType === 'driver'
+      ),
+    [groupedRows]
+  );
+
+
+  const companyGroups = useMemo(
+    () =>
+      groupedRows.filter(
+        item =>
+          item.entityType === 'company'
+      ),
+    [groupedRows]
+  );
+
+
+  const rowCount =
+    data?.rows?.length || 0;
+
+
+  const expenseCount = useMemo(
+    () =>
+      (data?.rows || []).filter(
+        row => row.type === 'expense'
+      ).length,
+    [data]
+  );
+
+
+  const transactionCount =
+    rowCount - expenseCount;
 
 
   const driverUSD =
@@ -123,17 +269,11 @@ export default function Reports() {
     data?.companySummary?.TOMAN || {};
 
 
-  const rowCount = useMemo(
-    () => data?.rows?.length || 0,
-    [data]
-  );
-
-
   return (
     <section>
 
       {/* ========================================
-          عنوان و دکمه چاپ
+          کنترل‌های داخل برنامه
       ======================================== */}
 
       <div className="section-head no-print">
@@ -144,7 +284,7 @@ export default function Reports() {
           </h2>
 
           <p>
-            گزارش راننده‌ها و شرکت‌ها بر اساس بازه زمانی
+            گزارش تفکیکی حساب رانندگان و شرکت‌ها
           </p>
         </div>
 
@@ -152,7 +292,9 @@ export default function Reports() {
         <div className="actions">
 
           {data && (
-            <button onClick={printReport}>
+            <button
+              onClick={printReport}
+            >
               چاپ / PDF
             </button>
           )}
@@ -161,10 +303,6 @@ export default function Reports() {
 
       </div>
 
-
-      {/* ========================================
-          فیلترها
-      ======================================== */}
 
       <div className="panel no-print">
 
@@ -183,7 +321,7 @@ export default function Reports() {
             >
 
               <option value="driver">
-                راننده‌ها
+                رانندگان
               </option>
 
 
@@ -252,39 +390,38 @@ export default function Reports() {
       </div>
 
 
+      {/* ========================================
+          خود گزارش
+      ======================================== */}
+
       {data && (
 
-        <div className="report-print-area">
+        <div className="report-document">
 
 
           {/* ========================================
-              سربرگ نسخه چاپی
+              سربرگ رسمی
           ======================================== */}
 
-          <div className="report-print-header">
+          <div className="report-header">
 
             <h1>
               شرکت حمل و نقل برادران والی
             </h1>
 
             <h2>
-              گزارش مالی
+              گزارش مالی {reportTypeLabel()}
             </h2>
 
-            <div className="report-print-meta">
+            <div className="report-info-line">
 
               <span>
-                <b>نوع گزارش:</b>{' '}
-                {reportTypeLabel()}
-              </span>
-
-              <span>
-                <b>از تاریخ:</b>{' '}
+                <b>از:</b>{' '}
                 {from || 'ابتدای اطلاعات'}
               </span>
 
               <span>
-                <b>تا تاریخ:</b>{' '}
+                <b>تا:</b>{' '}
                 {to || 'آخرین اطلاعات'}
               </span>
 
@@ -293,244 +430,279 @@ export default function Reports() {
                 {rowCount}
               </span>
 
+              {entityType !== 'company' && (
+                <span>
+                  <b>تعداد رانندگان:</b>{' '}
+                  {driverGroups.length}
+                </span>
+              )}
+
+              {entityType !== 'driver' && (
+                <span>
+                  <b>تعداد شرکت‌ها:</b>{' '}
+                  {companyGroups.length}
+                </span>
+              )}
+
+              {entityType !== 'company' && (
+                <span>
+                  <b>تعداد هزینه‌ها:</b>{' '}
+                  {expenseCount}
+                </span>
+              )}
+
+              <span>
+                <b>تراکنش‌های مالی:</b>{' '}
+                {transactionCount}
+              </span>
+
             </div>
 
           </div>
 
 
           {/* ========================================
-              کارت‌های خلاصه
+              گزارش رانندگان
           ======================================== */}
 
-          <div className="cards report-summary-cards">
+          {driverGroups.length > 0 && (
 
-            <div className="stat">
-              <span>
-                تعداد عملیات
-              </span>
+            <div className="report-group-section">
 
-              <b>
-                {rowCount}
-              </b>
-            </div>
+              <h2>
+                ریز حساب رانندگان
+              </h2>
 
 
-            <div className="stat">
-              <span>
-                نوع گزارش
-              </span>
+              {driverGroups.map(
+                (group, index) => (
 
-              <b>
-                {reportTypeLabel()}
-              </b>
-            </div>
+                  <div
+                    className="report-account-card"
+                    key={group.key}
+                  >
 
+                    <div className="report-account-head">
 
-            <div className="stat">
-              <span>
-                از تاریخ
-              </span>
-
-              <b>
-                {from || 'همه'}
-              </b>
-            </div>
-
-
-            <div className="stat">
-              <span>
-                تا تاریخ
-              </span>
-
-              <b>
-                {to || 'همه'}
-              </b>
-            </div>
-
-          </div>
+                      <div>
+                        <b>
+                          {index + 1}.
+                          {' '}
+                          راننده:
+                        </b>
+                        {' '}
+                        {group.entityName}
+                      </div>
 
 
-          {/* ========================================
-              گزارش راننده‌ها
-          ======================================== */}
-
-          {data.driverSummary && (
-
-            <div className="panel report-section">
-
-              <div className="section-head">
-
-                <div>
-
-                  <h3>
-                    گزارش حساب راننده‌ها
-                  </h3>
-
-                  <p>
-                    جمع دریافت، پرداخت، هزینه، بدهی و مانده
-                  </p>
-
-                </div>
-
-              </div>
+                      <div>
+                        <b>
+                          پلاک:
+                        </b>
+                        {' '}
+                        {group.plate || '—'}
+                      </div>
 
 
-              <h4>
-                دلار
-              </h4>
+                      <div>
+                        <b>
+                          تعداد عملیات:
+                        </b>
+                        {' '}
+                        {group.rows.length}
+                      </div>
+
+                    </div>
 
 
-              <div className="dashboard-grid">
+                    <table>
 
-                <div>
-                  <small>
-                    دریافت
-                  </small>
+                      <thead>
+                        <tr>
+                          <th>
+                            تاریخ
+                          </th>
 
-                  <strong>
-                    {money(
-                      driverUSD.receipt,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                          <th>
+                            نوع
+                          </th>
 
+                          <th>
+                            شرح
+                          </th>
 
-                <div>
-                  <small>
-                    پرداخت
-                  </small>
+                          <th>
+                            مبلغ
+                          </th>
 
-                  <strong>
-                    {money(
-                      driverUSD.payment,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                          <th>
+                            ثبت‌کننده
+                          </th>
+                        </tr>
+                      </thead>
 
 
-                <div>
-                  <small>
-                    هزینه
-                  </small>
+                      <tbody>
 
-                  <strong>
-                    {money(
-                      driverUSD.expense,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                        {group.rows.map(
+                          row => (
 
+                            <tr key={row.id}>
 
-                <div>
-                  <small>
-                    بدهی
-                  </small>
+                              <td>
+                                {formatDate(
+                                  row.occurredAt
+                                )}
+                              </td>
 
-                  <strong>
-                    {money(
-                      driverUSD.debt,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                              <td>
+                                {typeLabel(
+                                  row.type
+                                )}
+                              </td>
 
+                              <td>
+                                {row.description ||
+                                  '—'}
+                              </td>
 
-                <div>
-                  <small>
-                    مانده
-                  </small>
+                              <td>
+                                {money(
+                                  row.amount,
+                                  row.currency
+                                )}
+                              </td>
 
-                  <strong>
-                    {money(
-                      driverUSD.balance,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                              <td>
+                                {row.createdByName ||
+                                  '—'}
+                              </td>
 
-              </div>
+                            </tr>
 
+                          )
+                        )}
 
-              <h4>
-                تومان
-              </h4>
+                      </tbody>
+
+                    </table>
 
 
-              <div className="dashboard-grid">
+                    <div className="report-account-summary">
 
-                <div>
-                  <small>
-                    دریافت
-                  </small>
+                      <div className="report-summary-block">
 
-                  <strong>
-                    {money(
-                      driverToman.receipt,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                        <b>
+                          خلاصه دلار
+                        </b>
 
+                        <span>
+                          پرداخت:
+                          {' '}
+                          {money(
+                            group.summary.USD.payment,
+                            'USD'
+                          )}
+                        </span>
 
-                <div>
-                  <small>
-                    پرداخت
-                  </small>
+                        <span>
+                          دریافت:
+                          {' '}
+                          {money(
+                            group.summary.USD.receipt,
+                            'USD'
+                          )}
+                        </span>
 
-                  <strong>
-                    {money(
-                      driverToman.payment,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                        <span>
+                          هزینه:
+                          {' '}
+                          {money(
+                            group.summary.USD.expense,
+                            'USD'
+                          )}
+                        </span>
 
+                        <span>
+                          بدهی:
+                          {' '}
+                          {money(
+                            group.summary.USD.debt,
+                            'USD'
+                          )}
+                        </span>
 
-                <div>
-                  <small>
-                    هزینه
-                  </small>
+                        <strong>
+                          مانده:
+                          {' '}
+                          {money(
+                            group.summary.USD.balance,
+                            'USD'
+                          )}
+                        </strong>
 
-                  <strong>
-                    {money(
-                      driverToman.expense,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
-
-
-                <div>
-                  <small>
-                    بدهی
-                  </small>
-
-                  <strong>
-                    {money(
-                      driverToman.debt,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                      </div>
 
 
-                <div>
-                  <small>
-                    مانده
-                  </small>
+                      <div className="report-summary-block">
 
-                  <strong>
-                    {money(
-                      driverToman.balance,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                        <b>
+                          خلاصه تومان
+                        </b>
 
-              </div>
+                        <span>
+                          پرداخت:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.payment,
+                            'TOMAN'
+                          )}
+                        </span>
+
+                        <span>
+                          دریافت:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.receipt,
+                            'TOMAN'
+                          )}
+                        </span>
+
+                        <span>
+                          هزینه:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.expense,
+                            'TOMAN'
+                          )}
+                        </span>
+
+                        <span>
+                          بدهی:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.debt,
+                            'TOMAN'
+                          )}
+                        </span>
+
+                        <strong>
+                          مانده:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.balance,
+                            'TOMAN'
+                          )}
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                )
+              )}
 
             </div>
 
@@ -541,155 +713,217 @@ export default function Reports() {
               گزارش شرکت‌ها
           ======================================== */}
 
-          {data.companySummary && (
+          {companyGroups.length > 0 && (
 
-            <div className="panel report-section">
+            <div className="report-group-section">
 
-              <div className="section-head">
-
-                <div>
-
-                  <h3>
-                    گزارش حساب شرکت‌ها
-                  </h3>
-
-                  <p>
-                    جمع دریافت، پرداخت، بدهی و مانده
-                  </p>
-
-                </div>
-
-              </div>
+              <h2>
+                ریز حساب شرکت‌ها
+              </h2>
 
 
-              <h4>
-                دلار
-              </h4>
+              {companyGroups.map(
+                (group, index) => (
+
+                  <div
+                    className="report-account-card"
+                    key={group.key}
+                  >
+
+                    <div className="report-account-head">
+
+                      <div>
+                        <b>
+                          {index + 1}.
+                          {' '}
+                          شرکت:
+                        </b>
+                        {' '}
+                        {group.entityName}
+                      </div>
 
 
-              <div className="dashboard-grid">
+                      <div>
+                        <b>
+                          تعداد عملیات:
+                        </b>
+                        {' '}
+                        {group.rows.length}
+                      </div>
 
-                <div>
-                  <small>
-                    دریافت
-                  </small>
-
-                  <strong>
-                    {money(
-                      companyUSD.receipt,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                    </div>
 
 
-                <div>
-                  <small>
-                    پرداخت
-                  </small>
+                    <table>
 
-                  <strong>
-                    {money(
-                      companyUSD.payment,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                      <thead>
+                        <tr>
+                          <th>
+                            تاریخ
+                          </th>
 
+                          <th>
+                            نوع
+                          </th>
 
-                <div>
-                  <small>
-                    بدهی
-                  </small>
+                          <th>
+                            شرح
+                          </th>
 
-                  <strong>
-                    {money(
-                      companyUSD.debt,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
+                          <th>
+                            مبلغ
+                          </th>
 
-
-                <div>
-                  <small>
-                    مانده
-                  </small>
-
-                  <strong>
-                    {money(
-                      companyUSD.balance,
-                      'USD'
-                    )}
-                  </strong>
-                </div>
-
-              </div>
+                          <th>
+                            ثبت‌کننده
+                          </th>
+                        </tr>
+                      </thead>
 
 
-              <h4>
-                تومان
-              </h4>
+                      <tbody>
+
+                        {group.rows.map(
+                          row => (
+
+                            <tr key={row.id}>
+
+                              <td>
+                                {formatDate(
+                                  row.occurredAt
+                                )}
+                              </td>
+
+                              <td>
+                                {typeLabel(
+                                  row.type
+                                )}
+                              </td>
+
+                              <td>
+                                {row.description ||
+                                  '—'}
+                              </td>
+
+                              <td>
+                                {money(
+                                  row.amount,
+                                  row.currency
+                                )}
+                              </td>
+
+                              <td>
+                                {row.createdByName ||
+                                  '—'}
+                              </td>
+
+                            </tr>
+
+                          )
+                        )}
+
+                      </tbody>
+
+                    </table>
 
 
-              <div className="dashboard-grid">
+                    <div className="report-account-summary">
 
-                <div>
-                  <small>
-                    دریافت
-                  </small>
+                      <div className="report-summary-block">
 
-                  <strong>
-                    {money(
-                      companyToman.receipt,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                        <b>
+                          خلاصه دلار
+                        </b>
+
+                        <span>
+                          دریافت:
+                          {' '}
+                          {money(
+                            group.summary.USD.receipt,
+                            'USD'
+                          )}
+                        </span>
+
+                        <span>
+                          پرداخت:
+                          {' '}
+                          {money(
+                            group.summary.USD.payment,
+                            'USD'
+                          )}
+                        </span>
+
+                        <span>
+                          بدهی:
+                          {' '}
+                          {money(
+                            group.summary.USD.debt,
+                            'USD'
+                          )}
+                        </span>
+
+                        <strong>
+                          مانده:
+                          {' '}
+                          {money(
+                            group.summary.USD.balance,
+                            'USD'
+                          )}
+                        </strong>
+
+                      </div>
 
 
-                <div>
-                  <small>
-                    پرداخت
-                  </small>
+                      <div className="report-summary-block">
 
-                  <strong>
-                    {money(
-                      companyToman.payment,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                        <b>
+                          خلاصه تومان
+                        </b>
 
+                        <span>
+                          دریافت:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.receipt,
+                            'TOMAN'
+                          )}
+                        </span>
 
-                <div>
-                  <small>
-                    بدهی
-                  </small>
+                        <span>
+                          پرداخت:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.payment,
+                            'TOMAN'
+                          )}
+                        </span>
 
-                  <strong>
-                    {money(
-                      companyToman.debt,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                        <span>
+                          بدهی:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.debt,
+                            'TOMAN'
+                          )}
+                        </span>
 
+                        <strong>
+                          مانده:
+                          {' '}
+                          {money(
+                            group.summary.TOMAN.balance,
+                            'TOMAN'
+                          )}
+                        </strong>
 
-                <div>
-                  <small>
-                    مانده
-                  </small>
+                      </div>
 
-                  <strong>
-                    {money(
-                      companyToman.balance,
-                      'TOMAN'
-                    )}
-                  </strong>
-                </div>
+                    </div>
 
-              </div>
+                  </div>
+
+                )
+              )}
 
             </div>
 
@@ -697,160 +931,255 @@ export default function Reports() {
 
 
           {/* ========================================
-              ریز عملیات مالی
+              جمع کل گزارش
           ======================================== */}
 
-          <div className="panel report-section">
+          <div className="report-total-section">
 
-            <div className="section-head">
+            <h2>
+              جمع کل گزارش
+            </h2>
 
-              <div>
+
+            {data.driverSummary && (
+
+              <div className="report-grand-total">
 
                 <h3>
-                  ریز عملیات مالی
+                  رانندگان
                 </h3>
 
-                <p>
-                  تمام عملیات موجود در بازه انتخاب‌شده
-                </p>
+
+                <div className="report-account-summary">
+
+                  <div className="report-summary-block">
+
+                    <b>
+                      دلار
+                    </b>
+
+                    <span>
+                      پرداخت:
+                      {' '}
+                      {money(
+                        driverUSD.payment,
+                        'USD'
+                      )}
+                    </span>
+
+                    <span>
+                      دریافت:
+                      {' '}
+                      {money(
+                        driverUSD.receipt,
+                        'USD'
+                      )}
+                    </span>
+
+                    <span>
+                      هزینه:
+                      {' '}
+                      {money(
+                        driverUSD.expense,
+                        'USD'
+                      )}
+                    </span>
+
+                    <span>
+                      بدهی:
+                      {' '}
+                      {money(
+                        driverUSD.debt,
+                        'USD'
+                      )}
+                    </span>
+
+                    <strong>
+                      مانده:
+                      {' '}
+                      {money(
+                        driverUSD.balance,
+                        'USD'
+                      )}
+                    </strong>
+
+                  </div>
+
+
+                  <div className="report-summary-block">
+
+                    <b>
+                      تومان
+                    </b>
+
+                    <span>
+                      پرداخت:
+                      {' '}
+                      {money(
+                        driverToman.payment,
+                        'TOMAN'
+                      )}
+                    </span>
+
+                    <span>
+                      دریافت:
+                      {' '}
+                      {money(
+                        driverToman.receipt,
+                        'TOMAN'
+                      )}
+                    </span>
+
+                    <span>
+                      هزینه:
+                      {' '}
+                      {money(
+                        driverToman.expense,
+                        'TOMAN'
+                      )}
+                    </span>
+
+                    <span>
+                      بدهی:
+                      {' '}
+                      {money(
+                        driverToman.debt,
+                        'TOMAN'
+                      )}
+                    </span>
+
+                    <strong>
+                      مانده:
+                      {' '}
+                      {money(
+                        driverToman.balance,
+                        'TOMAN'
+                      )}
+                    </strong>
+
+                  </div>
+
+                </div>
 
               </div>
 
-            </div>
+            )}
 
 
-            <table>
+            {data.companySummary && (
 
-              <thead>
+              <div className="report-grand-total">
 
-                <tr>
-
-                  <th>
-                    تاریخ
-                  </th>
-
-                  <th>
-                    نوع حساب
-                  </th>
-
-                  <th>
-                    طرف حساب
-                  </th>
-
-                  <th>
-                    پلاک
-                  </th>
-
-                  <th>
-                    نوع عملیات
-                  </th>
-
-                  <th>
-                    شرح
-                  </th>
-
-                  <th>
-                    مبلغ
-                  </th>
-
-                  <th>
-                    ثبت‌کننده
-                  </th>
-
-                </tr>
-
-              </thead>
+                <h3>
+                  شرکت‌ها
+                </h3>
 
 
-              <tbody>
+                <div className="report-account-summary">
 
-                {(data.rows || []).map(
-                  item => (
+                  <div className="report-summary-block">
 
-                    <tr key={item.id}>
+                    <b>
+                      دلار
+                    </b>
 
-                      <td>
-                        {formatDate(
-                          item.occurredAt
-                        )}
-                      </td>
+                    <span>
+                      دریافت:
+                      {' '}
+                      {money(
+                        companyUSD.receipt,
+                        'USD'
+                      )}
+                    </span>
 
+                    <span>
+                      پرداخت:
+                      {' '}
+                      {money(
+                        companyUSD.payment,
+                        'USD'
+                      )}
+                    </span>
 
-                      <td>
-                        {entityLabel(
-                          item.entityType
-                        )}
-                      </td>
+                    <span>
+                      بدهی:
+                      {' '}
+                      {money(
+                        companyUSD.debt,
+                        'USD'
+                      )}
+                    </span>
 
+                    <strong>
+                      مانده:
+                      {' '}
+                      {money(
+                        companyUSD.balance,
+                        'USD'
+                      )}
+                    </strong>
 
-                      <td>
-                        {item.entityName ||
-                          '—'}
-                      </td>
-
-
-                      <td>
-                        {item.plate ||
-                          '—'}
-                      </td>
-
-
-                      <td>
-                        {typeLabel(
-                          item.type
-                        )}
-                      </td>
-
-
-                      <td>
-                        {item.description ||
-                          '—'}
-                      </td>
-
-
-                      <td>
-                        {money(
-                          item.amount,
-                          item.currency
-                        )}
-                      </td>
+                  </div>
 
 
-                      <td>
-                        {item.createdByName ||
-                          '—'}
-                      </td>
+                  <div className="report-summary-block">
 
-                    </tr>
+                    <b>
+                      تومان
+                    </b>
 
-                  )
-                )}
+                    <span>
+                      دریافت:
+                      {' '}
+                      {money(
+                        companyToman.receipt,
+                        'TOMAN'
+                      )}
+                    </span>
 
+                    <span>
+                      پرداخت:
+                      {' '}
+                      {money(
+                        companyToman.payment,
+                        'TOMAN'
+                      )}
+                    </span>
 
-                {!data.rows?.length && (
+                    <span>
+                      بدهی:
+                      {' '}
+                      {money(
+                        companyToman.debt,
+                        'TOMAN'
+                      )}
+                    </span>
 
-                  <tr>
+                    <strong>
+                      مانده:
+                      {' '}
+                      {money(
+                        companyToman.balance,
+                        'TOMAN'
+                      )}
+                    </strong>
 
-                    <td colSpan="8">
-                      در این بازه زمانی عملیات مالی ثبت نشده است.
-                    </td>
+                  </div>
 
-                  </tr>
+                </div>
 
-                )}
+              </div>
 
-              </tbody>
-
-            </table>
+            )}
 
           </div>
 
 
           {/* ========================================
-              امضا
+              پایین گزارش
           ======================================== */}
 
-          <div className="report-signatures">
+          <div className="report-footer">
 
             <div>
               <b>
@@ -881,6 +1210,7 @@ export default function Reports() {
             </div>
 
           </div>
+
 
         </div>
 
