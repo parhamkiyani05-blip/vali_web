@@ -2,116 +2,165 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSession, request } from '../lib/api';
 
-export default function Drivers(){
-
+export default function Drivers() {
   const role = getSession()?.user?.role;
   const navigate = useNavigate();
 
-  const [items,setItems] = useState([]);
+  const [items, setItems] = useState([]);
+  const [msg, setMsg] = useState('');
 
-  const [f,setF] = useState({
-    name:'',
-    truckNumber:'',
-    phone:'',
-    language:'fa'
+  const [form, setForm] = useState({
+    name: '',
+    truckNumber: '',
+    phone: '',
+    language: 'fa'
   });
 
-  const [msg,setMsg] = useState('');
 
+  // ========================================
+  // فقط مدیر و دفتردار لیست راننده‌ها را می‌بینند
+  // ========================================
+  async function load() {
+    if (role === 'employee') {
+      return;
+    }
 
-  async function load(){
-    try{
-      setItems(await request('/api/drivers'));
-    }catch(error){
-      setMsg(error.message || 'خطا در دریافت راننده‌ها');
+    try {
+      const data = await request('/api/drivers');
+      setItems(data);
+    } catch (error) {
+      setMsg(
+        error.message ||
+        'خطا در دریافت لیست راننده‌ها'
+      );
     }
   }
 
 
-  useEffect(()=>{
+  useEffect(() => {
     load();
-  },[]);
+  }, []);
 
 
-  async function add(e){
-
+  // ========================================
+  // ثبت راننده / پلاک
+  // ========================================
+  async function add(e) {
     e.preventDefault();
 
     setMsg('');
 
-    try{
+    try {
 
-      await request('/api/drivers',{
-        method:'POST',
-        body:JSON.stringify(f)
+      await request('/api/drivers', {
+        method: 'POST',
+        body: JSON.stringify(form)
       });
 
-      setF({
-        name:'',
-        truckNumber:'',
-        phone:'',
-        language:'fa'
+
+      setForm({
+        name: '',
+        truckNumber: '',
+        phone: '',
+        language: 'fa'
       });
 
-      setMsg('راننده با موفقیت ثبت شد.');
 
-      load();
+      setMsg(
+        role === 'employee'
+          ? 'راننده و پلاک با موفقیت ثبت شد.'
+          : 'راننده با موفقیت ثبت شد.'
+      );
 
-    }catch(error){
 
-      if(error.message === 'PLATE_ALREADY_EXISTS'){
-        setMsg('این شماره پلاک قبلاً در سیستم ثبت شده است.');
+      if (role !== 'employee') {
+        await load();
       }
-      else{
-        setMsg(error.message || 'خطا در ثبت راننده');
+
+    } catch (error) {
+
+      if (error.message === 'PLATE_ALREADY_EXISTS') {
+
+        setMsg(
+          'این شماره پلاک قبلاً در سیستم ثبت شده است.'
+        );
+
+      } else {
+
+        setMsg(
+          error.message ||
+          'خطا در ثبت راننده'
+        );
+
       }
 
     }
-
   }
 
 
-  async function del(id){
-
-    if(!confirm('این راننده به بایگانی منتقل شود؟')){
+  // ========================================
+  // بایگانی فقط مدیر
+  // ========================================
+  async function archiveDriver(id) {
+    if (
+      !confirm(
+        'این راننده به بایگانی منتقل شود؟'
+      )
+    ) {
       return;
     }
 
-    try{
+    try {
 
-      await request(`/api/drivers/${id}`,{
-        method:'DELETE'
+      await request(`/api/drivers/${id}`, {
+        method: 'DELETE'
       });
 
-      load();
+      setMsg(
+        'راننده به بایگانی منتقل شد.'
+      );
 
-    }catch(error){
+      await load();
 
-      setMsg(error.message || 'خطا در بایگانی راننده');
+    } catch (error) {
+
+      setMsg(
+        error.message ||
+        'خطا در بایگانی راننده'
+      );
 
     }
-
   }
 
 
   return (
-
     <section>
 
       <div className="section-head">
 
         <div>
 
-          <h2>راننده‌ها</h2>
+          <h2>
+            {role === 'employee'
+              ? 'ثبت راننده و پلاک'
+              : 'راننده‌ها'}
+          </h2>
+
 
           <p>
-            ثبت راننده، شماره پلاک، تماس و مشاهده حساب راننده
+            {role === 'employee'
+              ? 'راننده و شماره پلاک جدید را ثبت کنید.'
+              : 'ثبت راننده، شماره پلاک، تماس و مشاهده حساب راننده‌ها.'}
           </p>
 
         </div>
 
       </div>
 
+
+      {/* ========================================
+          فرم ثبت راننده
+      ======================================== */}
 
       <div className="panel">
 
@@ -126,11 +175,11 @@ export default function Drivers(){
 
             <input
               required
-              value={f.name}
-              onChange={e=>
-                setF({
-                  ...f,
-                  name:e.target.value
+              value={form.name}
+              onChange={e =>
+                setForm({
+                  ...form,
+                  name: e.target.value
                 })
               }
             />
@@ -144,11 +193,12 @@ export default function Drivers(){
 
             <input
               required
-              value={f.truckNumber}
-              onChange={e=>
-                setF({
-                  ...f,
-                  truckNumber:e.target.value.toUpperCase()
+              value={form.truckNumber}
+              onChange={e =>
+                setForm({
+                  ...form,
+                  truckNumber:
+                    e.target.value.toUpperCase()
                 })
               }
             />
@@ -162,11 +212,11 @@ export default function Drivers(){
 
             <input
               required
-              value={f.phone}
-              onChange={e=>
-                setF({
-                  ...f,
-                  phone:e.target.value
+              value={form.phone}
+              onChange={e =>
+                setForm({
+                  ...form,
+                  phone: e.target.value
                 })
               }
             />
@@ -179,132 +229,8 @@ export default function Drivers(){
             زبان
 
             <select
-              value={f.language}
-              onChange={e=>
-                setF({
-                  ...f,
-                  language:e.target.value
-                })
-              }
-            >
-
-              <option value="fa">
-                فارسی
-              </option>
-
-              <option value="tr">
-                Türkçe
-              </option>
-
-            </select>
-
-          </label>
-
-
-          <button>
-            افزودن راننده
-          </button>
-
-        </form>
-
-
-        {msg && (
-          <div className="notice">
-            {msg}
-          </div>
-        )}
-
-      </div>
-
-
-      <div className="panel">
-
-        <table>
-
-          <thead>
-
-            <tr>
-
-              <th>راننده</th>
-
-              <th>پلاک</th>
-
-              <th>تماس</th>
-
-              <th>زبان</th>
-
-              <th>عملیات</th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody>
-
-            {items.map(x=>(
-
-              <tr key={x.id}>
-
-                <td>
-                  {x.name}
-                </td>
-
-                <td>
-                  {x.truck_number}
-                </td>
-
-                <td>
-                  {x.phone}
-                </td>
-
-                <td>
-                  {x.language === 'tr'
-                    ? 'Türkçe'
-                    : 'فارسی'
-                  }
-                </td>
-
-                <td>
-
-                  <div className="actions">
-
-                    <button
-                      onClick={()=>
-                        navigate(`/drivers/${x.id}/account`)
-                      }
-                    >
-                      حساب
-                    </button>
-
-
-                    {role === 'manager' && (
-
-                      <button
-                        className="ghost danger"
-                        onClick={()=>del(x.id)}
-                      >
-                        بایگانی
-                      </button>
-
-                    )}
-
-                  </div>
-
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-  );
-
-}
+              value={form.language}
+              onChange={e =>
+                setForm({
+                  ...form,
+                 
