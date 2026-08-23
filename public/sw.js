@@ -1,4 +1,4 @@
-const CACHE='vali-shell-v1';
+const CACHE='vali-shell-v3';
 const CORE=['/','/index.html','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE))));
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
