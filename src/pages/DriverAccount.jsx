@@ -29,7 +29,6 @@ export default function DriverAccount() {
     description: ''
   });
 
-
   async function load() {
     try {
       setError('');
@@ -39,7 +38,6 @@ export default function DriverAccount() {
       );
 
       setData(result);
-
     } catch (err) {
       setError(
         err.message ||
@@ -48,11 +46,9 @@ export default function DriverAccount() {
     }
   }
 
-
   useEffect(() => {
     load();
   }, [id]);
-
 
   async function submitTransaction(e) {
     e.preventDefault();
@@ -92,18 +88,15 @@ export default function DriverAccount() {
       setMsg('عملیات مالی با موفقیت ثبت شد.');
 
       await load();
-
     } catch (err) {
       setMsg(
         err.message ||
         'خطا در ثبت عملیات مالی'
       );
-
     } finally {
       setBusy(false);
     }
   }
-
 
   function startEdit(item) {
     if (role !== 'manager') return;
@@ -119,7 +112,6 @@ export default function DriverAccount() {
     });
   }
 
-
   function cancelEdit() {
     setEditingId(null);
 
@@ -130,7 +122,6 @@ export default function DriverAccount() {
       description: ''
     });
   }
-
 
   async function saveEdit(transactionId) {
     if (
@@ -169,18 +160,15 @@ export default function DriverAccount() {
       cancelEdit();
 
       await load();
-
     } catch (err) {
       setMsg(
         err.message ||
         'خطا در ویرایش تراکنش'
       );
-
     } finally {
       setBusy(false);
     }
   }
-
 
   async function deleteTransaction(transactionId) {
     if (role !== 'manager') return;
@@ -208,7 +196,6 @@ export default function DriverAccount() {
       setMsg('تراکنش به بایگانی منتقل شد.');
 
       await load();
-
     } catch (err) {
       setMsg(
         err.message ||
@@ -217,7 +204,6 @@ export default function DriverAccount() {
     }
   }
 
-
   const summary = useMemo(() => {
     if (!data) return null;
 
@@ -225,6 +211,7 @@ export default function DriverAccount() {
       USD: {
         payment: 0,
         receipt: 0,
+        debt: 0,
         expense: 0,
         balance: 0
       },
@@ -232,11 +219,11 @@ export default function DriverAccount() {
       TOMAN: {
         payment: 0,
         receipt: 0,
+        debt: 0,
         expense: 0,
         balance: 0
       }
     };
-
 
     for (const item of data.transactions || []) {
       const currency = item.currency;
@@ -254,10 +241,9 @@ export default function DriverAccount() {
       }
 
       if (item.type === 'debt') {
-        result[currency].payment += amount;
+        result[currency].debt += amount;
       }
     }
-
 
     for (const item of data.expenses || []) {
       const currency = item.currency;
@@ -267,18 +253,16 @@ export default function DriverAccount() {
       result[currency].expense += Number(item.amount || 0);
     }
 
-
     for (const currency of ['USD', 'TOMAN']) {
       result[currency].balance =
         result[currency].payment +
-        result[currency].expense -
+        result[currency].expense +
+        result[currency].debt -
         result[currency].receipt;
     }
 
     return result;
-
   }, [data]);
-
 
   const rows = useMemo(() => {
     if (!data) return [];
@@ -304,9 +288,7 @@ export default function DriverAccount() {
         new Date(b.occurred_at).getTime() -
         new Date(a.occurred_at).getTime()
     );
-
   }, [data]);
-
 
   function typeLabel(type) {
     if (type === 'payment') return 'پرداخت';
@@ -317,22 +299,30 @@ export default function DriverAccount() {
     return type;
   }
 
-
   function money(value, currency) {
-    return `${Number(value || 0).toLocaleString()} ${
+    return `${Number(value || 0).toLocaleString('en-US')} ${
       currency === 'USD'
         ? '$'
         : 'تومان'
     }`;
   }
 
+  function formatDate(value) {
+    if (!value) return '-';
+
+    try {
+      return new Date(value).toLocaleString(
+        'fa-IR-u-nu-latn'
+      );
+    } catch {
+      return value;
+    }
+  }
 
   if (error) {
     return (
       <section>
-
         <div className="panel">
-
           <div className="error">
             {error}
           </div>
@@ -344,29 +334,22 @@ export default function DriverAccount() {
           >
             بازگشت
           </button>
-
         </div>
-
       </section>
     );
   }
-
 
   if (!data || !summary) {
     return (
       <section>
-
         <div className="panel">
           در حال دریافت حساب راننده...
         </div>
-
       </section>
     );
   }
 
-
   const { driver } = data;
-
 
   return (
     <section>
@@ -406,7 +389,6 @@ export default function DriverAccount() {
 
       </div>
 
-
       <div className="panel">
 
         <h3>
@@ -427,23 +409,19 @@ export default function DriverAccount() {
 
       </div>
 
-
       <div className="panel">
 
         <div className="section-head">
-
           <div>
             <h3>
               ثبت عملیات مالی راننده
             </h3>
 
             <p>
-              دریافت از راننده یا پرداخت به راننده
+              پرداخت، دریافت یا ثبت بدهی راننده
             </p>
           </div>
-
         </div>
-
 
         <form
           className="grid-form"
@@ -451,7 +429,6 @@ export default function DriverAccount() {
         >
 
           <label>
-
             نوع عملیات
 
             <select
@@ -472,13 +449,14 @@ export default function DriverAccount() {
                 دریافت از راننده
               </option>
 
-            </select>
+              <option value="debt">
+                بدهی راننده
+              </option>
 
+            </select>
           </label>
 
-
           <label>
-
             مبلغ
 
             <input
@@ -494,12 +472,9 @@ export default function DriverAccount() {
                 })
               }
             />
-
           </label>
 
-
           <label>
-
             ارز
 
             <select
@@ -511,7 +486,6 @@ export default function DriverAccount() {
                 })
               }
             >
-
               <option value="TOMAN">
                 تومان
               </option>
@@ -519,14 +493,10 @@ export default function DriverAccount() {
               <option value="USD">
                 دلار
               </option>
-
             </select>
-
           </label>
 
-
           <label className="wide">
-
             شرح
 
             <textarea
@@ -539,9 +509,7 @@ export default function DriverAccount() {
               }
               placeholder="شرح عملیات را بنویسید"
             />
-
           </label>
-
 
           <button disabled={busy}>
             {busy
@@ -551,7 +519,6 @@ export default function DriverAccount() {
 
         </form>
 
-
         {msg && (
           <div className="notice">
             {msg}
@@ -559,7 +526,6 @@ export default function DriverAccount() {
         )}
 
       </div>
-
 
       <div className="panel">
 
@@ -582,7 +548,6 @@ export default function DriverAccount() {
             </strong>
           </div>
 
-
           <div>
             <small>
               دریافت از راننده
@@ -596,6 +561,18 @@ export default function DriverAccount() {
             </strong>
           </div>
 
+          <div>
+            <small>
+              بدهی
+            </small>
+
+            <strong>
+              {money(
+                summary.USD.debt,
+                'USD'
+              )}
+            </strong>
+          </div>
 
           <div>
             <small>
@@ -609,7 +586,6 @@ export default function DriverAccount() {
               )}
             </strong>
           </div>
-
 
           <div>
             <small>
@@ -627,7 +603,6 @@ export default function DriverAccount() {
         </div>
 
       </div>
-
 
       <div className="panel">
 
@@ -650,7 +625,6 @@ export default function DriverAccount() {
             </strong>
           </div>
 
-
           <div>
             <small>
               دریافت از راننده
@@ -664,6 +638,18 @@ export default function DriverAccount() {
             </strong>
           </div>
 
+          <div>
+            <small>
+              بدهی
+            </small>
+
+            <strong>
+              {money(
+                summary.TOMAN.debt,
+                'TOMAN'
+              )}
+            </strong>
+          </div>
 
           <div>
             <small>
@@ -677,7 +663,6 @@ export default function DriverAccount() {
               )}
             </strong>
           </div>
-
 
           <div>
             <small>
@@ -696,28 +681,23 @@ export default function DriverAccount() {
 
       </div>
 
-
       <div className="panel">
 
         <div className="section-head">
-
           <div>
             <h3>
               ریز حساب
             </h3>
 
             <p>
-              تمام پرداخت‌ها، دریافت‌ها و هزینه‌ها
+              تمام پرداخت‌ها، دریافت‌ها، بدهی‌ها و هزینه‌ها
             </p>
           </div>
-
         </div>
-
 
         <table>
 
           <thead>
-
             <tr>
               <th>تاریخ</th>
               <th>نوع</th>
@@ -728,37 +708,27 @@ export default function DriverAccount() {
                 <th>عملیات</th>
               )}
             </tr>
-
           </thead>
-
 
           <tbody>
 
             {rows.map(item => {
-
               const isEditing =
                 item.source === 'transaction' &&
                 editingId === item.id;
 
               return (
-
                 <tr
                   key={`${item.source}-${item.id}`}
                 >
 
                   <td>
-                    {item.occurred_at
-                      ? new Date(
-                          item.occurred_at
-                        ).toLocaleString('fa-IR')
-                      : '-'}
+                    {formatDate(item.occurred_at)}
                   </td>
-
 
                   <td>
 
                     {isEditing ? (
-
                       <select
                         value={editForm.type}
                         onChange={e =>
@@ -768,7 +738,6 @@ export default function DriverAccount() {
                           })
                         }
                       >
-
                         <option value="payment">
                           پرداخت
                         </option>
@@ -780,22 +749,16 @@ export default function DriverAccount() {
                         <option value="debt">
                           بدهی
                         </option>
-
                       </select>
-
                     ) : (
-
                       typeLabel(item.type)
-
                     )}
 
                   </td>
 
-
                   <td>
 
                     {isEditing ? (
-
                       <input
                         value={editForm.description}
                         onChange={e =>
@@ -805,20 +768,15 @@ export default function DriverAccount() {
                           })
                         }
                       />
-
                     ) : (
-
                       item.description || '-'
-
                     )}
 
                   </td>
 
-
                   <td>
 
                     {isEditing ? (
-
                       <div className="actions">
 
                         <input
@@ -843,7 +801,6 @@ export default function DriverAccount() {
                             })
                           }
                         >
-
                           <option value="TOMAN">
                             تومان
                           </option>
@@ -851,31 +808,23 @@ export default function DriverAccount() {
                           <option value="USD">
                             دلار
                           </option>
-
                         </select>
 
                       </div>
-
                     ) : (
-
                       money(
                         item.amount,
                         item.currency
                       )
-
                     )}
 
                   </td>
 
-
                   {role === 'manager' && (
-
                     <td>
 
                       {item.source === 'transaction' ? (
-
                         isEditing ? (
-
                           <div className="actions">
 
                             <button
@@ -896,9 +845,7 @@ export default function DriverAccount() {
                             </button>
 
                           </div>
-
                         ) : (
-
                           <div className="actions">
 
                             <button
@@ -922,32 +869,22 @@ export default function DriverAccount() {
                             </button>
 
                           </div>
-
                         )
-
                       ) : (
-
                         <span>
                           هزینه
                         </span>
-
                       )}
 
                     </td>
-
                   )}
 
                 </tr>
-
               );
-
             })}
 
-
             {!rows.length && (
-
               <tr>
-
                 <td
                   colSpan={
                     role === 'manager'
@@ -957,9 +894,7 @@ export default function DriverAccount() {
                 >
                   هنوز تراکنشی برای این راننده ثبت نشده است.
                 </td>
-
               </tr>
-
             )}
 
           </tbody>
