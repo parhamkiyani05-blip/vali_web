@@ -66,13 +66,12 @@ export default function Invoice() {
             ? 'Fatura bir sürücü veya firma hesabından açılmalıdır.'
             : 'فاکتور باید از حساب یک راننده یا شرکت باز شود.'
         );
-
       } catch (err) {
         setError(
           err.message ||
-          (lang === 'tr'
-            ? 'Fatura bilgileri alınamadı.'
-            : 'خطا در دریافت اطلاعات فاکتور')
+            (lang === 'tr'
+              ? 'Fatura bilgileri alınamadı.'
+              : 'خطا در دریافت اطلاعات فاکتور')
         );
       }
     }
@@ -228,8 +227,9 @@ export default function Invoice() {
     return result;
   }, [filteredRows, data]);
 
+  // همیشه اعداد مبلغ را با ارقام انگلیسی نمایش می‌دهد
   function money(value, currency) {
-    return `${Number(value || 0).toLocaleString()} ${
+    return `${Number(value || 0).toLocaleString('en-US')} ${
       currency === 'USD'
         ? '$'
         : lang === 'tr'
@@ -254,13 +254,18 @@ export default function Invoice() {
     return type;
   }
 
+  // تاریخ با فرمت مناسب ولی همیشه با ارقام انگلیسی
   function formatDate(value) {
     if (!value) return '—';
 
     try {
-      return new Date(value).toLocaleDateString(
-        lang === 'fa' ? 'fa-IR' : 'tr-TR'
-      );
+      const date = new Date(value);
+
+      if (lang === 'tr') {
+        return date.toLocaleDateString('tr-TR-u-nu-latn');
+      }
+
+      return date.toLocaleDateString('fa-IR-u-nu-latn');
     } catch {
       return value;
     }
@@ -304,7 +309,6 @@ export default function Invoice() {
     return (
       <section>
         <div className="panel">
-
           <div className="error">
             {error}
           </div>
@@ -312,7 +316,6 @@ export default function Invoice() {
           <button onClick={() => navigate(-1)}>
             {lang === 'tr' ? 'Geri' : 'بازگشت'}
           </button>
-
         </div>
       </section>
     );
@@ -341,7 +344,6 @@ export default function Invoice() {
       <div className="section-head no-print">
 
         <div>
-
           <h2>
             {lang === 'tr'
               ? 'Hesap Faturası'
@@ -353,9 +355,7 @@ export default function Invoice() {
               ? 'Tarih aralığı, işlem detayları ve ayrı USD / Toman toplamları'
               : 'بازه زمانی، ریز تراکنش‌ها و جمع مستقل دلار و تومان'}
           </p>
-
         </div>
-
 
         <div className="actions">
 
@@ -363,7 +363,6 @@ export default function Invoice() {
             value={lang}
             onChange={e => setLang(e.target.value)}
           >
-
             <option value="fa">
               فارسی
             </option>
@@ -371,9 +370,7 @@ export default function Invoice() {
             <option value="tr">
               Türkçe
             </option>
-
           </select>
-
 
           <button
             className="ghost"
@@ -381,7 +378,6 @@ export default function Invoice() {
           >
             {lang === 'tr' ? 'Geri' : 'بازگشت'}
           </button>
-
 
           <button onClick={() => window.print()}>
             {lang === 'tr'
@@ -393,13 +389,11 @@ export default function Invoice() {
 
       </div>
 
-
       <div className="panel no-print">
 
         <div className="grid-form">
 
           <label>
-
             {lang === 'tr'
               ? 'Fatura dönemi'
               : 'بازه فاکتور'}
@@ -408,7 +402,6 @@ export default function Invoice() {
               value={rangeMode}
               onChange={e => setRangeMode(e.target.value)}
             >
-
               <option value="all">
                 {lang === 'tr'
                   ? 'Tüm işlemler'
@@ -426,17 +419,13 @@ export default function Invoice() {
                   ? 'Özel tarih aralığı'
                   : 'بازه دلخواه'}
               </option>
-
             </select>
 
           </label>
 
-
           {rangeMode === 'custom' && (
             <>
-
               <label>
-
                 {lang === 'tr'
                   ? 'Başlangıç tarihi'
                   : 'از تاریخ'}
@@ -446,12 +435,9 @@ export default function Invoice() {
                   value={fromDate}
                   onChange={e => setFromDate(e.target.value)}
                 />
-
               </label>
 
-
               <label>
-
                 {lang === 'tr'
                   ? 'Bitiş tarihi'
                   : 'تا تاریخ'}
@@ -461,16 +447,13 @@ export default function Invoice() {
                   value={toDate}
                   onChange={e => setToDate(e.target.value)}
                 />
-
               </label>
-
             </>
           )}
 
         </div>
 
       </div>
-
 
       <div
         className="invoice-sheet"
@@ -480,7 +463,6 @@ export default function Invoice() {
         <div className="invoice-top">
 
           <div>
-
             <h1>
               {lang === 'tr'
                 ? 'VALİ KARDEŞLER TRANSPORT'
@@ -496,9 +478,7 @@ export default function Invoice() {
             <small>
               {rangeLabel()}
             </small>
-
           </div>
-
 
           <div className="invoice-badge">
             A5
@@ -506,12 +486,10 @@ export default function Invoice() {
 
         </div>
 
-
         <div className="invoice-info">
 
           {data.entityType === 'driver' ? (
             <>
-
               <span>
                 <b>
                   {lang === 'tr'
@@ -520,7 +498,6 @@ export default function Invoice() {
                 </b>{' '}
                 {entity.name}
               </span>
-
 
               <span>
                 <b>
@@ -531,7 +508,6 @@ export default function Invoice() {
                 {entity.truck_number}
               </span>
 
-
               <span>
                 <b>
                   {lang === 'tr'
@@ -540,11 +516,9 @@ export default function Invoice() {
                 </b>{' '}
                 {entity.phone || '—'}
               </span>
-
             </>
           ) : (
             <>
-
               <span>
                 <b>
                   {lang === 'tr' ? 'Firma' : 'شرکت'}:
@@ -552,7 +526,6 @@ export default function Invoice() {
                 {entity.name}
               </span>
 
-
               <span>
                 <b>
                   {lang === 'tr'
@@ -562,9 +535,7 @@ export default function Invoice() {
                 {entity.phone || '—'}
               </span>
 
-
               {entity.note && (
-
                 <span>
                   <b>
                     {lang === 'tr'
@@ -573,21 +544,16 @@ export default function Invoice() {
                   </b>{' '}
                   {entity.note}
                 </span>
-
               )}
-
             </>
           )}
 
         </div>
 
-
         <table>
 
           <thead>
-
             <tr>
-
               <th>
                 {lang === 'tr'
                   ? 'Tarih'
@@ -611,18 +577,13 @@ export default function Invoice() {
                   ? 'Tutar'
                   : 'مبلغ'}
               </th>
-
             </tr>
-
           </thead>
-
 
           <tbody>
 
             {filteredRows.map(row => (
-
               <tr key={row.id}>
-
                 <td>
                   {formatDate(row.occurredAt)}
                 </td>
@@ -638,30 +599,22 @@ export default function Invoice() {
                 <td>
                   {money(row.amount, row.currency)}
                 </td>
-
               </tr>
-
             ))}
 
-
             {!filteredRows.length && (
-
               <tr>
-
                 <td colSpan="4">
                   {lang === 'tr'
                     ? 'Bu tarih aralığında işlem bulunmuyor.'
                     : 'در این بازه زمانی تراکنشی ثبت نشده است.'}
                 </td>
-
               </tr>
-
             )}
 
           </tbody>
 
         </table>
-
 
         <div className="invoice-totals">
 
@@ -677,7 +630,6 @@ export default function Invoice() {
             </b>
           </div>
 
-
           <div>
             <span>
               {lang === 'tr'
@@ -690,11 +642,8 @@ export default function Invoice() {
             </b>
           </div>
 
-
           {data.entityType === 'driver' && (
-
             <div>
-
               <span>
                 {lang === 'tr'
                   ? 'USD Masraf'
@@ -704,11 +653,8 @@ export default function Invoice() {
               <b>
                 {money(totals.USD.expense, 'USD')}
               </b>
-
             </div>
-
           )}
-
 
           <div>
             <span>
@@ -722,7 +668,6 @@ export default function Invoice() {
             </b>
           </div>
 
-
           <div>
             <span>
               {lang === 'tr'
@@ -734,7 +679,6 @@ export default function Invoice() {
               {money(totals.TOMAN.receipt, 'TOMAN')}
             </b>
           </div>
-
 
           <div>
             <span>
@@ -748,11 +692,8 @@ export default function Invoice() {
             </b>
           </div>
 
-
           {data.entityType === 'driver' && (
-
             <div>
-
               <span>
                 {lang === 'tr'
                   ? 'Toman Masraf'
@@ -762,11 +703,8 @@ export default function Invoice() {
               <b>
                 {money(totals.TOMAN.expense, 'TOMAN')}
               </b>
-
             </div>
-
           )}
-
 
           <div>
             <span>
@@ -781,7 +719,6 @@ export default function Invoice() {
           </div>
 
         </div>
-
 
         <footer>
 
