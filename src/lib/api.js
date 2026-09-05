@@ -1,6 +1,6 @@
 const API = (
   import.meta.env.VITE_API_URL ||
-  'https://backup-api.vali-transport.ir'
+  'https://api.vali-transport.ir'
 ).replace(/\/+$/, '');
 
 export const apiBase = API;
