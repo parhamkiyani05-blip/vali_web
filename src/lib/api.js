@@ -1,7 +1,9 @@
-const API = (
-  import.meta.env.VITE_API_URL ||
-  'https://api.vali-transport.ir'
-).replace(/\/+$/, '');
+// ========================================
+// VALI API
+// Primary Backend: ParsPack
+// ========================================
+
+const API = 'https://backup-api.vali-transport.ir';
 
 export const apiBase = API;
 
@@ -41,43 +43,62 @@ export function clearSession() {
 export async function request(path, options = {}) {
   const session = getSession();
 
-  const res = await fetch(`${API}${path}`, {
-    ...options,
+  const controller = new AbortController();
 
-    headers: {
-      'Content-Type': 'application/json',
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 20000);
 
-      ...(session?.token
-        ? {
-            Authorization:
-              `Bearer ${session.token}`
-          }
-        : {}),
+  try {
+    const res = await fetch(`${API}${path}`, {
+      ...options,
 
-      ...(options.headers || {})
+      signal: controller.signal,
+
+      headers: {
+        'Content-Type': 'application/json',
+
+        ...(session?.token
+          ? {
+              Authorization:
+                `Bearer ${session.token}`
+            }
+          : {}),
+
+        ...(options.headers || {})
+      }
+    });
+
+    if (!res.ok) {
+      let data = {};
+
+      try {
+        data = await res.json();
+      } catch {}
+
+      throw new Error(
+        data.error ||
+        `HTTP_${res.status}`
+      );
     }
-  });
 
+    if (res.status === 204) {
+      return null;
+    }
 
-  if (!res.ok) {
-    let data = {};
+    return await res.json();
 
-    try {
-      data = await res.json();
-    } catch {}
+  } catch (error) {
 
-    throw new Error(
-      data.error ||
-      `HTTP_${res.status}`
-    );
+    if (error?.name === 'AbortError') {
+      throw new Error('API_TIMEOUT');
+    }
+
+    throw error;
+
+  } finally {
+    clearTimeout(timeout);
   }
-
-
-  if (res.status === 204) {
-    return null;
-  }
-
-  return res.json();
 }
 
 
@@ -93,7 +114,7 @@ export async function onlineLogin(
     method: 'POST',
 
     body: JSON.stringify({
-      username,
+      username: username.trim(),
       password
     })
   });
@@ -169,23 +190,19 @@ export async function canOfflineLogin(
     return false;
   }
 
-
   if (!saved) {
     return false;
   }
-
 
   const normalizedUsername =
     username
       .trim()
       .toLowerCase();
 
-
   const verifier =
     await sha256(
       `${normalizedUsername}::${password}`
     );
-
 
   return (
     saved.username ===
@@ -212,7 +229,6 @@ export function queueExpense(payload) {
     q = [];
   }
 
-
   q.push({
     id:
       crypto.randomUUID
@@ -226,7 +242,6 @@ export function queueExpense(payload) {
     createdAt:
       new Date().toISOString()
   });
-
 
   localStorage.setItem(
     'vali_outbox',
@@ -243,11 +258,15 @@ export function queueExpense(payload) {
 
 export function outboxCount() {
   try {
-    return JSON.parse(
+    const q = JSON.parse(
       localStorage.getItem(
         'vali_outbox'
       ) || '[]'
-    ).length;
+    );
+
+    return Array.isArray(q)
+      ? q.length
+      : 0;
 
   } catch {
     return 0;
@@ -272,14 +291,15 @@ export async function flushOutbox() {
     q = [];
   }
 
+  if (!Array.isArray(q)) {
+    q = [];
+  }
 
   if (!q.length) {
     return 0;
   }
 
-
   const remain = [];
-
 
   for (const item of q) {
     try {
@@ -303,12 +323,10 @@ export async function flushOutbox() {
     }
   }
 
-
   localStorage.setItem(
     'vali_outbox',
     JSON.stringify(remain)
   );
-
 
   return remain.length;
 }
