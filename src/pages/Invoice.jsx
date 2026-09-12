@@ -1552,11 +1552,6 @@ export default function Invoice() {
             <span>TEL: +989120801384</span>
           </div>
 
-          <div>
-            <b>HABIB VALI</b>
-            <span>TEL: +989147257526</span>
-          </div>
-
           <div className="sign">
             {
               lang === 'tr'
