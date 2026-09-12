@@ -151,6 +151,32 @@ export default function Users() {
     }
   }
 
+  async function removeUser(x) {
+    const ok = window.confirm(
+      `آیا از حذف کاربر «${x.full_name || x.username}» مطمئن هستید؟\nاین عملیات قابل بازگشت نیست.`
+    );
+
+    if (!ok) return;
+
+    setMsg('');
+
+    try {
+      await request(`/api/users/${x.id}`, {
+        method: 'DELETE'
+      });
+
+      if (editing === x.id) {
+        cancelEdit();
+      }
+
+      setMsg('کاربر با موفقیت حذف شد.');
+
+      await load();
+    } catch (error) {
+      setMsg(error.message || 'خطا در حذف کاربر');
+    }
+  }
+
   return (
     <section>
 
@@ -160,8 +186,9 @@ export default function Users() {
 
           <p>
             فقط مدیر می‌تواند حساب کاربری بسازد،
-            نام کاربری یا رمز عبور را تغییر دهد
-            و کاربران را فعال یا غیرفعال کند.
+            اطلاعات کاربران را ویرایش کند،
+            آن‌ها را فعال یا غیرفعال کند
+            و در صورت نیاز حذف کند.
           </p>
         </div>
       </div>
@@ -437,6 +464,7 @@ export default function Users() {
                   <div className="actions">
 
                     <button
+                      type="button"
                       className="ghost"
                       onClick={() =>
                         startEdit(x)
@@ -447,6 +475,7 @@ export default function Users() {
 
 
                     <button
+                      type="button"
                       className="ghost"
                       onClick={() =>
                         toggle(x)
@@ -456,6 +485,17 @@ export default function Users() {
                         ? 'غیرفعال'
                         : 'فعال'
                       }
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="ghost danger"
+                      onClick={() =>
+                        removeUser(x)
+                      }
+                    >
+                      حذف
                     </button>
 
                   </div>
