@@ -537,6 +537,8 @@ th {
   padding: 12mm;
   box-shadow: 0 20px 60px #0008;
   font-family: Tahoma, Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
 .invoice-top {
@@ -625,6 +627,202 @@ th {
 
 
 /* =========================================================
+   فاکتور طرح‌دار VALI
+========================================================= */
+
+.invoice-sheet.invoice-designed {
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfaf6 100%
+    );
+  border: 1px solid #d8c28a;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, .35);
+  padding: 0 10mm 10mm;
+}
+
+.invoice-sheet.invoice-designed::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6mm;
+  background:
+    linear-gradient(
+      90deg,
+      #0b1625 0%,
+      #17263a 62%,
+      #d6a84b 62%,
+      #d6a84b 100%
+    );
+}
+
+.invoice-sheet.invoice-designed::after {
+  content: "VALI TRANSPORT";
+  position: absolute;
+  left: -18mm;
+  bottom: 28mm;
+  transform: rotate(-90deg);
+  color: rgba(15, 23, 42, .045);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 5px;
+}
+
+.invoice-designed .invoice-top {
+  margin-top: 13mm;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #d8c28a;
+  position: relative;
+  z-index: 1;
+}
+
+.invoice-designed .invoice-top h1 {
+  color: #111827;
+  font-size: 20px;
+  letter-spacing: .2px;
+}
+
+.invoice-designed .invoice-top p {
+  color: #6b7280;
+  font-size: 10px;
+  margin-top: 7px;
+}
+
+.invoice-designed .invoice-top small {
+  color: #8b6b2f;
+  font-weight: 700;
+}
+
+.invoice-designed .invoice-badge {
+  min-width: 48px;
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      145deg,
+      #d6a84b,
+      #f0d28a
+    );
+  color: #101826;
+  font-weight: 900;
+  letter-spacing: 1px;
+  box-shadow: 0 7px 18px rgba(115, 83, 24, .22);
+}
+
+.invoice-designed .invoice-info {
+  background: #f7f3e8;
+  border: 1px solid #e7d7ae;
+  border-right: 4px solid #d6a84b;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 12px 0;
+}
+
+.invoice-designed .invoice-info span {
+  color: #334155;
+}
+
+.invoice-designed .invoice-info b {
+  color: #111827;
+}
+
+.invoice-designed table {
+  border: 1px solid #d7dde6;
+  background: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+.invoice-designed thead {
+  background: #152238;
+}
+
+.invoice-designed th {
+  background: #152238;
+  color: #f8fafc;
+  border-color: #26364b;
+  font-weight: 700;
+}
+
+.invoice-designed td {
+  color: #273244;
+  border-color: #e3e7ec;
+}
+
+.invoice-designed tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.invoice-designed .invoice-totals {
+  width: 64%;
+  gap: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.invoice-designed .invoice-totals div {
+  border: 1px solid #dde2e8;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  padding: 7px 9px;
+}
+
+.invoice-designed .invoice-totals div span {
+  color: #475569;
+}
+
+.invoice-designed .invoice-totals div b {
+  color: #111827;
+}
+
+.invoice-designed .invoice-totals .balance-row {
+  background: #152238;
+  border-color: #152238;
+  color: #fff;
+}
+
+.invoice-designed .invoice-totals .balance-row span {
+  color: #fff;
+}
+
+.invoice-designed .invoice-totals .balance-row b {
+  color: #f2ce79;
+  font-size: 10px;
+}
+
+.invoice-designed footer {
+  border-top: 2px solid #d6a84b;
+  color: #475569;
+  position: relative;
+  z-index: 1;
+}
+
+.invoice-designed footer b {
+  color: #111827;
+  font-weight: 800;
+}
+
+.invoice-designed footer span {
+  color: #64748b;
+}
+
+.invoice-designed .sign {
+  background: #faf7ef;
+  border: 1px dashed #c8aa65;
+  border-radius: 8px;
+  color: #7b5d26;
+  font-weight: 700;
+}
+
+
+/* =========================================================
    گزارش مالی رسمی
 ========================================================= */
 
@@ -640,9 +838,6 @@ th {
   direction: rtl;
   font-family: Tahoma, Arial, sans-serif;
 }
-
-
-/* سربرگ گزارش */
 
 .report-header {
   background: #fff;
@@ -686,9 +881,6 @@ th {
   color: #111827;
 }
 
-
-/* بخش رانندگان / شرکت‌ها */
-
 .report-group-section {
   margin-top: 30px;
 }
@@ -701,9 +893,6 @@ th {
   color: #111827;
 }
 
-
-/* کارت یک راننده / شرکت */
-
 .report-account-card {
   background: #fff;
   border: 1px solid #d6dde7;
@@ -713,9 +902,6 @@ th {
   break-inside: avoid;
   page-break-inside: avoid;
 }
-
-
-/* سر کارت */
 
 .report-account-head {
   min-height: 48px;
@@ -739,9 +925,6 @@ th {
   color: #475569;
   font-weight: 600;
 }
-
-
-/* جدول داخل هر راننده */
 
 .report-account-card table {
   min-width: 0;
@@ -771,9 +954,6 @@ th {
 .report-account-card tbody tr:last-child td {
   border-bottom: 0;
 }
-
-
-/* خلاصه همان راننده */
 
 .report-account-summary {
   display: grid;
@@ -814,9 +994,6 @@ th {
   white-space: nowrap;
 }
 
-
-/* جمع کل */
-
 .report-total-section {
   background: #fff;
   border: 2px solid #cbd5e1;
@@ -843,9 +1020,6 @@ th {
   font-size: 14px;
   color: #334155;
 }
-
-
-/* پایین گزارش */
 
 .report-footer {
   margin-top: 34px;
@@ -1005,10 +1179,6 @@ th {
     gap: 10px;
   }
 
-  /* -----------------------------------------
-     دکمه‌های فاکتور در موبایل
-  ----------------------------------------- */
-
   .section-head.no-print {
     flex-direction: column;
     align-items: stretch;
@@ -1025,7 +1195,8 @@ th {
 
   .section-head.no-print .actions select {
     width: auto;
-    min-width: 72px;
+    min-width: 68px;
+    max-width: 96px;
     height: 34px;
     padding: 5px 6px;
     font-size: 11px;
@@ -1125,20 +1296,15 @@ th {
     color: #111 !important;
   }
 
-
-  /* حذف کامل ساختار برنامه */
-
   .sidebar,
   .main > header,
   .no-print {
     display: none !important;
   }
 
-
   .app-shell {
     display: block !important;
   }
-
 
   .main {
     display: block !important;
@@ -1147,17 +1313,11 @@ th {
     overflow: visible !important;
   }
 
-
   section {
     display: block !important;
     margin: 0 !important;
     padding: 0 !important;
   }
-
-
-  /* -----------------------------------------
-     فاکتور A5
-  ----------------------------------------- */
 
   .invoice-sheet {
     page: invoice;
@@ -1169,10 +1329,17 @@ th {
     padding: 10mm !important;
   }
 
-
-  /* -----------------------------------------
-     گزارش A4
-  ----------------------------------------- */
+  .invoice-sheet.invoice-designed {
+    padding: 0 10mm 10mm !important;
+    border: 1px solid #d8c28a !important;
+    background:
+      linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #fbfaf6 100%
+      ) !important;
+    box-shadow: none !important;
+  }
 
   .report-document {
     page: report;
@@ -1187,7 +1354,6 @@ th {
     box-shadow: none !important;
   }
 
-
   .report-header {
     border: 0 !important;
     border-top: 3px solid #111 !important;
@@ -1197,17 +1363,14 @@ th {
     margin-bottom: 16px !important;
   }
 
-
   .report-header h1 {
     font-size: 20px !important;
   }
-
 
   .report-header h2 {
     font-size: 13px !important;
     margin: 6px 0 10px !important;
   }
-
 
   .report-info-line {
     font-size: 9px !important;
@@ -1215,11 +1378,9 @@ th {
     padding-top: 9px !important;
   }
 
-
   .report-group-section {
     margin-top: 18px !important;
   }
-
 
   .report-group-section > h2 {
     font-size: 14px !important;
@@ -1227,17 +1388,14 @@ th {
     padding-bottom: 6px !important;
   }
 
-
   .report-account-card {
     border: 1px solid #999 !important;
     border-radius: 0 !important;
     margin-bottom: 13px !important;
     box-shadow: none !important;
-
     break-inside: avoid;
     page-break-inside: avoid;
   }
-
 
   .report-account-head {
     background: #eee !important;
@@ -1246,13 +1404,11 @@ th {
     font-size: 9.5px !important;
   }
 
-
   .report-account-card table {
     min-width: 0 !important;
     width: 100% !important;
     table-layout: auto;
   }
-
 
   .report-account-card th {
     color: #111 !important;
@@ -1262,14 +1418,12 @@ th {
     border-color: #aaa !important;
   }
 
-
   .report-account-card td {
     color: #111 !important;
     padding: 5px 6px !important;
     font-size: 8px !important;
     border-color: #ccc !important;
   }
-
 
   .report-account-summary {
     padding: 7px 9px !important;
@@ -1278,7 +1432,6 @@ th {
     grid-template-columns: 1fr 1fr !important;
   }
 
-
   .report-summary-block {
     padding: 6px 7px !important;
     gap: 4px 8px !important;
@@ -1286,50 +1439,51 @@ th {
     border-radius: 0 !important;
   }
 
-
   .report-summary-block > b {
     font-size: 9px !important;
     padding-bottom: 4px !important;
   }
-
 
   .report-total-section {
     margin-top: 18px !important;
     padding: 11px !important;
     border: 1.5px solid #555 !important;
     border-radius: 0 !important;
-
     break-inside: avoid;
     page-break-inside: avoid;
   }
-
 
   .report-total-section > h2 {
     font-size: 14px !important;
     margin-bottom: 9px !important;
   }
 
-
   .report-grand-total h3 {
     font-size: 10px !important;
     margin-bottom: 6px !important;
   }
 
-
   .report-footer {
     margin-top: 20px !important;
     padding-top: 10px !important;
     font-size: 8px !important;
-
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
-
-  /* رنگ‌های چاپ */
-
   .report-document,
-  .report-document * {
+  .report-document *,
+  .invoice-sheet.invoice-designed,
+  .invoice-sheet.invoice-designed * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .invoice-sheet.invoice-designed::before,
+  .invoice-designed thead,
+  .invoice-designed th,
+  .invoice-designed .balance-row,
+  .invoice-designed .invoice-badge {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
